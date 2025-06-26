@@ -1,0 +1,49 @@
+{
+  "name": "@sbc/vanilla",
+  "version": "0.1.0",
+  "description": "Browser-compatible JavaScript SDK for SBC Account Abstraction",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
+  },
+  "keywords": [
+    "SBC",
+    "Stable Coin",
+    "account-abstraction",
+    "vanilla",
+    "browser",
+    "frontend",
+    "wallet",
+    "erc4337",
+    "paymaster",
+    "gasless"
+  ],
+  "author": "Stable Coin Inc.",
+  "license": "MIT",
+  "dependencies": {
+    "@sbc/core": "^0.1.0"
+  },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stablecoinxyz/app-kit.git",
+    "directory": "packages/vanilla"
+  },
+  "bugs": {
+    "url": "https://github.com/stablecoinxyz/app-kit/issues"
+  },
+  "homepage": "https://github.com/stablecoinxyz/app-kit#readme"
+} 

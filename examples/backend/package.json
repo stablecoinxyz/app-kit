@@ -1,0 +1,15 @@
+{
+  "name": "sbc-backend-example",
+  "version": "0.1.0",
+  "description": "Backend example using SBC Core SDK",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "tsx basic-usage.ts",
+    "dev": "tsx watch basic-usage.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+} 

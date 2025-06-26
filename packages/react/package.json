@@ -1,0 +1,54 @@
+{
+  "name": "@sbc/react",
+  "version": "0.1.0",
+  "description": "React hooks and components for SBC Account Abstraction",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "lint:fix": "eslint src/**/*.{ts,tsx} --fix"
+  },
+  "keywords": [
+    "SBC",
+    "Stable Coin",
+    "account-abstraction",
+    "react",
+    "hooks",
+    "frontend",
+    "erc4337",
+    "paymaster",
+    "gasless"
+  ],
+  "author": "Stable Coin Inc.",
+  "license": "MIT",
+  "dependencies": {
+    "@sbc/core": "^0.1.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "viem": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stablecoinxyz/app-kit.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/stablecoinxyz/app-kit/issues"
+  },
+  "homepage": "https://github.com/stablecoinxyz/app-kit#readme"
+} 
