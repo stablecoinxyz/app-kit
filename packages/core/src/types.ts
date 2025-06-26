@@ -18,6 +18,45 @@ export interface SbcAppKitConfig {
   
   /** Optional: Use staging environment */
   staging?: boolean;
+  
+  /** Optional: Enable debug logging */
+  debug?: boolean;
+  
+  /** Optional: Production logging configuration */
+  logging?: LoggingConfig;
+}
+
+export interface LoggingConfig {
+  /** Enable production logging */
+  enabled: boolean;
+  
+  /** Log level: 'error' | 'warn' | 'info' | 'debug' */
+  level: 'error' | 'warn' | 'info' | 'debug';
+  
+  /** Logger function - implement your own or use provided adapters */
+  logger: (level: string, message: string, metadata: Record<string, any>) => void | Promise<void>;
+  
+  /** Application context for log enrichment */
+  context?: {
+    /** Your application name */
+    appName?: string;
+    /** Environment (production, staging, development) */
+    environment?: string;
+    /** Application version */
+    version?: string;
+    /** User ID for tracking user-specific operations */
+    userId?: string;
+    /** Session ID for tracking related operations */
+    sessionId?: string;
+    /** Additional custom fields */
+    [key: string]: any;
+  };
+  
+  /** Include sensitive data in logs (default: false for production) */
+  includeSensitive?: boolean;
+  
+  /** Sampling rate for performance logs (0.0 to 1.0, default: 1.0) */
+  samplingRate?: number;
 }
 
 export interface UserOperationParams {

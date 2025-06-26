@@ -320,7 +320,7 @@ describe('SbcAppKit', () => {
         calls: [] // Empty array should throw
       };
 
-      await expect(kit.sendUserOperation(params)).rejects.toThrow('Calls array must be non-empty');
+      await expect(kit.sendUserOperation(params)).rejects.toThrow('Operations array cannot be empty');
     });
 
     it('should handle permissionless client errors', async () => {

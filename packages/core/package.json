@@ -34,7 +34,7 @@
   "author": "Stable Coin Inc.",
   "license": "MIT",
   "dependencies": {
-    "permissionless": "^0.2.0",
+    "permissionless": "^0.2.47",
     "viem": "^2.21.0"
   },
   "devDependencies": {

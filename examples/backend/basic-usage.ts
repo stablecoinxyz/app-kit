@@ -1,35 +1,77 @@
 /**
- * SBC Kit Basic Usage Example
+ * SBC Kit Basic Usage Example with Pluggable Logging
  * 
  * Setup:
  * export SBC_API_KEY="sbc-your-api-key-here"
  * export PRIVATE_KEY="0xYourPrivateKeyHere"  # Optional
+ * export SBC_DEBUG="true"  # Optional - enables debug logging
+ * export BETTERSTACK_SOURCE_TOKEN="your-betterstack-source-token"  # For production logging
  * npm run examples:backend
  */
 
-import { SbcAppKit } from '../../packages/core/src/index.js';
+import { SbcAppKit, createBetterStackLogger, createConsoleLogger, createMultiLogger } from '../../packages/core/src/index.js';
 import { encodeFunctionData } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
 async function main() {
   const apiKey = process.env.SBC_API_KEY;
   const privateKey = process.env.PRIVATE_KEY as `0x${string}` | undefined;
+  const debug = process.env.SBC_DEBUG === 'true';
+  const environment = process.env.NODE_ENV || 'development';
+  const betterStackToken = process.env.BETTERSTACK_SOURCE_TOKEN;
 
   if (!apiKey) {
     throw new Error('SBC_API_KEY environment variable is required');
   }
 
-  // Initialize SDK
+  // Choose your logging strategy:
+  let logger;
+  
+  if (betterStackToken) {
+    // Option 1: BetterStack only
+    logger = createBetterStackLogger(betterStackToken);
+    
+    // Option 2: Multiple destinations (BetterStack + Console)
+    // logger = createMultiLogger(
+    //   createBetterStackLogger(betterStackToken),
+    //   createConsoleLogger(true)
+    // );
+  } else {
+    // Option 3: Development - console only
+    logger = createConsoleLogger(true);
+  }
+
+  // Clean configuration with pluggable logging
+  const loggingConfig = {
+    enabled: true,
+    level: 'info' as const,
+    logger, // Use the logger adapter you chose above
+    context: {
+      appName: 'my-dapp-backend',
+      environment,
+      version: '1.0.0',
+      userId: process.env.USER_ID || 'unknown',
+      sessionId: `session_${Date.now()}`
+    },
+    includeSensitive: false,
+    samplingRate: environment === 'production' ? 0.1 : 1.0
+  };
+
+  // Initialize SDK with your chosen logger
   const sbcApp = new SbcAppKit({
     apiKey,
     chain: baseSepolia as any,
-    privateKey
+    privateKey,
+    debug,
+    logging: loggingConfig
   });
 
-  console.log('🚀 SBC Kit initialized');
+  console.log('🚀 SBC Kit initialized with pluggable logging');
   console.log('Chain:', sbcApp.getChain().name);
   console.log('Owner:', sbcApp.getOwnerAddress());
 
+  // All operations below will be logged using your chosen adapter
+  
   // Get account info
   const account = await sbcApp.getAccount();
   console.log('\n📋 Account:', account.address);
@@ -39,7 +81,7 @@ async function main() {
   // Simple transaction example
   await sendSimpleTransaction(sbcApp);
   
-  // ERC-20 transfer example
+  // ERC-20 transfer example  
   await sendERC20Transfer(sbcApp);
 }
 
