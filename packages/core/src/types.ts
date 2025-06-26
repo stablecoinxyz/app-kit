@@ -13,9 +13,6 @@ export interface SbcAppKitConfig {
   /** Optional: Custom RPC URL for the blockchain */
   rpcUrl?: string;
   
-  /** Optional: Custom bundler URL */
-  bundlerUrl?: string;
-  
   /** Optional: Custom paymaster URL */
   paymasterUrl?: string;
   
@@ -47,8 +44,6 @@ export interface CallParams {
 
 export type SendUserOperationParams = UserOperationParams | { calls: CallParams[] };
 
-
-
 export interface UserOperationResult {
   /** Hash of the user operation */
   userOperationHash: string;
@@ -57,7 +52,7 @@ export interface UserOperationResult {
   transactionHash: string;
   
   /** Block number where transaction was included */
-  blockNumber: number;
+  blockNumber: string;
   
   /** Gas used for the transaction */
   gasUsed: string;
@@ -113,17 +108,6 @@ export interface ChainConfig {
   /** Default RPC URL */
   rpcUrl: string;
   
-  /** Default bundler URL */
-  bundlerUrl: string;
-  
   /** SBC AA Proxy URL */
   aaProxyUrl: string;
-}
-
-export interface RetryParams {
-  /** Number of retry attempts (default: 3) */
-  retries?: number;
-  
-  /** Initial delay between retries in milliseconds (default: 1000) */
-  delay?: number;
 }

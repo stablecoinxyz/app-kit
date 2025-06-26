@@ -1,9 +1,8 @@
-import { createPublicClient, createWalletClient, http, decodeAbiParameters, Hex } from 'viem';
+import { createPublicClient, createWalletClient, http, decodeAbiParameters, Hex, PublicClient, WalletClient, Chain } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 import { CHAIN_CONFIGS, SBC_API_KEY_PREFIX } from './constants';
-import { ChainConfig, RetryParams } from './types';
-import { Chain } from 'viem';
+import { ChainConfig } from './types';
 
 // Static mapping from chain ID to viem export variable name
 // This ensures we use the exact same identifier as in viem/chains exports
@@ -27,13 +26,13 @@ export function getChainConfig(chain: Chain): ChainConfig {
 /**
  * Create a public client for blockchain interactions
  */
-export function createSbcPublicClient(chain: Chain, rpcUrl?: string) {
+export function createSbcPublicClient(chain: Chain, rpcUrl?: string): PublicClient {
   const config = getChainConfig(chain);
   
   return createPublicClient({
     chain,
     transport: http(rpcUrl || config.rpcUrl)
-  }) as any; // Type assertion to avoid viem internal type conflicts
+  });
 }
 
 /**
@@ -43,7 +42,7 @@ export function createSbcWalletClient(
   chain: Chain, 
   privateKey?: `0x${string}`, 
   rpcUrl?: string
-): any {
+): WalletClient {
   const config = getChainConfig(chain);
   
   // Generate a random private key if none provided
@@ -183,38 +182,4 @@ export function formatError(error: unknown): string {
     return error;
   }
   return 'Unknown error occurred';
-}
-
-/**
- * Sleep utility for delays
- */
-export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Retry a function up to a maximum number of times with exponential backoff
- * @param fn - The function to retry
- * @param params - The parameters for the retry
- * @returns The result of the function
- */
-export async function retry<T>(
-  fn: () => Promise<T>,
-  params: RetryParams = {}
-): Promise<T> {
-  const { retries = 3, delay = 1000 } = params;
-  let lastError: Error | undefined;
-  
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error as Error;
-      if (i < retries - 1) {
-        await sleep(delay * Math.pow(2, i)); // Exponential backoff
-      }
-    }
-  }
-  
-  throw lastError;
 }

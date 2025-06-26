@@ -276,7 +276,7 @@ describe('SBC App Kit Core Tests', () => {
         json: async () => {
           throw new Error('Invalid JSON');
         }
-      } as any);
+      } as Partial<Response> as Response);
 
       await expect(kit.getAccount()).rejects.toThrow('Invalid JSON');
     });

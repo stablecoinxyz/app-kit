@@ -1,5 +1,16 @@
-import { getChainConfig, buildAaProxyUrl, validateApiKey, formatError, retry, decodeRevertReason, parseUserOperationError } from '../utils';
+import { getChainConfig, buildAaProxyUrl, validateApiKey, formatError, decodeRevertReason, parseUserOperationError } from '../utils';
 import { base, baseSepolia } from 'viem/chains';
+import { Chain } from 'viem';
+
+// Create a proper unsupported chain type for testing
+const createUnsupportedChain = (id: number, name: string): Chain => ({
+  id,
+  name,
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['http://localhost:8545'] }
+  }
+});
 
 describe('Utils Functions', () => {
   describe('getChainConfig', () => {
@@ -16,7 +27,7 @@ describe('Utils Functions', () => {
     });
 
     it('should throw error for unsupported chain', () => {
-      const unsupportedChain = { id: 999, name: 'Unsupported' } as any;
+      const unsupportedChain = createUnsupportedChain(999, 'Unsupported');
       expect(() => getChainConfig(unsupportedChain)).toThrow();
     });
   });
@@ -38,7 +49,7 @@ describe('Utils Functions', () => {
     });
 
     it('should throw error for unsupported chain', () => {
-      const unsupportedChain = { id: 999, name: 'Unsupported' } as any;
+      const unsupportedChain = createUnsupportedChain(999, 'Unsupported');
       expect(() => buildAaProxyUrl(unsupportedChain, 'sbc-test123')).toThrow('Unsupported chain');
     });
   });
@@ -75,42 +86,6 @@ describe('Utils Functions', () => {
       expect(formatError(123)).toBe('Unknown error occurred');
       expect(formatError(null)).toBe('Unknown error occurred');
       expect(formatError(undefined)).toBe('Unknown error occurred');
-    });
-  });
-
-  describe('retry', () => {
-    it('should succeed on first attempt', async () => {
-      const mockFn = jest.fn().mockResolvedValue('success');
-      const result = await retry(mockFn);
-      
-      expect(result).toBe('success');
-      expect(mockFn).toHaveBeenCalledTimes(1);
-    });
-
-    it('should retry on failures and eventually succeed', async () => {
-      const mockFn = jest.fn()
-        .mockRejectedValueOnce(new Error('Attempt 1 failed'))
-        .mockRejectedValueOnce(new Error('Attempt 2 failed'))
-        .mockResolvedValue('success');
-      
-      const result = await retry(mockFn, { retries: 3, delay: 10 });
-      
-      expect(result).toBe('success');
-      expect(mockFn).toHaveBeenCalledTimes(3);
-    });
-
-    it('should throw last error after all retries exhausted', async () => {
-      const mockFn = jest.fn().mockRejectedValue(new Error('Always fails'));
-      
-      await expect(retry(mockFn, { retries: 2, delay: 10 })).rejects.toThrow('Always fails');
-      expect(mockFn).toHaveBeenCalledTimes(2);
-    });
-
-    it('should use default retry parameters', async () => {
-      const mockFn = jest.fn().mockRejectedValue(new Error('Always fails'));
-      
-      await expect(retry(mockFn)).rejects.toThrow('Always fails');
-      expect(mockFn).toHaveBeenCalledTimes(3); // Default retries
     });
   });
 

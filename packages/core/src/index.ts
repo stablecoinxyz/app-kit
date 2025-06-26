@@ -5,12 +5,10 @@ export type {
   UserOperationResult,
   UserOperationEstimate,
   AccountInfo,
-  ChainConfig,
-  RetryParams
+  ChainConfig
 } from './types';
 export {
   CHAIN_CONFIGS,
-  ENTRYPOINT_V07,
   SBC_API_KEY_PREFIX
 } from './constants';
 export {
@@ -19,7 +17,5 @@ export {
   createSbcPublicClient,
   createSbcWalletClient,
   buildAaProxyUrl,
-  formatError,
-  sleep,
-  retry
+  formatError
 } from './utils';

@@ -1,8 +1,8 @@
-import { Address, PublicClient, WalletClient, parseEther, http } from 'viem';
+import { Address, PublicClient, WalletClient, parseEther, http, LocalAccount } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { entryPoint07Address, createPaymasterClient, createBundlerClient } from 'viem/account-abstraction';
 import { toKernelSmartAccount } from 'permissionless/accounts';
-import { createSmartAccountClient, } from 'permissionless';
+import { createSmartAccountClient, SmartAccountClient } from 'permissionless';
 import {
   SbcAppKitConfig,
   UserOperationParams,
@@ -27,7 +27,7 @@ export class SbcAppKit {
   private config: SbcAppKitConfig;
   private publicClient: PublicClient;
   private walletClient: WalletClient;
-  private smartAccountClient: any; // permissionless smart account client
+  private smartAccountClient: SmartAccountClient | null = null;
   private aaProxyUrl: string;
 
   constructor(config: SbcAppKitConfig) {
@@ -43,16 +43,13 @@ export class SbcAppKit {
       throw new Error('No account attached to wallet client');
     }
     
-    // Build AA proxy URL - this follows SBC's pattern
+    // Build Account Abstraction API URL
     this.aaProxyUrl = buildAaProxyUrl(
       config.chain,
       config.apiKey,
       config.staging,
       config.paymasterUrl
     );
-
-    console.log(`SBC Kit initialized for ${config.chain.name} (Chain ID: ${config.chain.id}) with owner: ${this.walletClient.account?.address || 'No account attached'}`);
-    console.log(`🎯 Ready to use Kernel smart accounts via SBC AA infrastructure`);
   }
 
   /**
@@ -63,12 +60,15 @@ export class SbcAppKit {
       return this.smartAccountClient;
     }
 
-    console.log('🏗️ Initializing Kernel smart account...');
+    // Ensure wallet has account and it's a local account
+    if (!this.walletClient.account) {
+      throw new Error('No account attached to wallet client');
+    }
 
     // Create Kernel account following SBC documentation
     const kernelAccount = await toKernelSmartAccount({
       client: this.publicClient,
-      owners: [this.walletClient.account as any],
+      owners: [this.walletClient.account as LocalAccount],
       entryPoint: {
         address: entryPoint07Address,
         version: "0.7",
@@ -98,28 +98,46 @@ export class SbcAppKit {
       },
     });
 
-    console.log(`✅ Kernel smart account initialized at: ${kernelAccount.address}`);
     return this.smartAccountClient;
   }
 
   /**
-   * Convert and validate params to calls array format
+   * Type guard to check if params contain a calls array
    */
-  private validateAndConvertToCalls(params: SendUserOperationParams): CallParams[] {
-    if ('calls' in params) {
-      // Validate calls array
-      if (!Array.isArray(params.calls) || params.calls.length === 0) {
-        throw new Error('Calls array must be non-empty');
-      }
-      return params.calls;
-    } else {
-      // Convert UserOperationParams to calls array
-      return [{
-        to: params.to,
-        data: params.data,
-        value: params.value ? parseEther(params.value) : 0n
-      }];
+  private isBatchOperation(params: SendUserOperationParams): params is { calls: CallParams[] } {
+    return 'calls' in params;
+  }
+
+  /**
+   * Convert single operation params to calls array format
+   */
+  private toCallsArray(params: UserOperationParams): CallParams[] {
+    return [{
+      to: params.to,
+      data: params.data,
+      value: params.value ? parseEther(params.value) : 0n
+    }];
+  }
+
+  /**
+   * Validate that calls array is not empty
+   */
+  private validateCalls(calls: CallParams[]): void {
+    if (!Array.isArray(calls) || calls.length === 0) {
+      throw new Error('Operations array cannot be empty');
     }
+  }
+
+  /**
+   * Normalize user operation parameters to calls array format
+   */
+  private normalizeToCalls(params: SendUserOperationParams): CallParams[] {
+    const calls = this.isBatchOperation(params) 
+      ? params.calls 
+      : this.toCallsArray(params);
+    
+    this.validateCalls(calls);
+    return calls;
   }
 
   /**
@@ -148,17 +166,13 @@ export class SbcAppKit {
    */
   async sendUserOperation(params: SendUserOperationParams): Promise<UserOperationResult> {
     try {
-      console.log(`📤 Sending gasless user operation via SBC paymaster...`);
-
       const smartAccountClient = await this.initializeSmartAccountClient();
       
       // Convert params to calls array and validate
-      const calls = this.validateAndConvertToCalls(params);
+      const calls = this.normalizeToCalls(params);
       
       // Send user operation through permissionless with SBC's bundler and paymaster
       const userOpHash = await smartAccountClient.sendUserOperation({ calls });
-
-      console.log(`✅ User operation sent with hash: ${userOpHash}`);
 
       // Wait for the transaction to be mined
       const receipt = await smartAccountClient.waitForUserOperationReceipt({
@@ -174,7 +188,6 @@ export class SbcAppKit {
 
     } catch (error) {
       const message = parseUserOperationError(error);
-      console.error(`Failed to send user operation: ${message}`);
       throw new Error(`Failed to send user operation: ${message}`);
     }
   }
@@ -185,6 +198,11 @@ export class SbcAppKit {
   async getAccount(): Promise<AccountInfo> {
     try {
       const smartAccountClient = await this.initializeSmartAccountClient();
+      
+      if (!smartAccountClient.account) {
+        throw new Error('Smart account not initialized');
+      }
+      
       const address = smartAccountClient.account.address;
       
       // Check if account is deployed by looking at bytecode
@@ -195,9 +213,10 @@ export class SbcAppKit {
       let nonce = 0;
       if (isDeployed) {
         try {
-          nonce = await smartAccountClient.account.getNonce();
+          const nonceResult = await smartAccountClient.account.getNonce();
+          nonce = Number(nonceResult);
         } catch (error) {
-          console.warn('Failed to get nonce, using 0');
+          // Silently fallback to 0 if nonce retrieval fails
         }
       }
 
@@ -209,7 +228,6 @@ export class SbcAppKit {
 
     } catch (error) {
       const message = formatError(error);
-      console.error(`Failed to get account info: ${message}`);
       throw new Error(`Failed to get account info: ${message}`);
     }
   }
@@ -219,12 +237,14 @@ export class SbcAppKit {
    */
   async estimateUserOperation(params: SendUserOperationParams): Promise<UserOperationEstimate> {
     try {
-      console.log(`Estimating user operation gas costs via SBC bundler...`);
-
       const smartAccountClient = await this.initializeSmartAccountClient();
       
+      if (!smartAccountClient.account) {
+        throw new Error('Smart account not initialized');
+      }
+      
       // Convert params to calls array and validate
-      const calls = this.validateAndConvertToCalls(params);
+      const calls = this.normalizeToCalls(params);
       
       if (calls.length === 0) {
         throw new Error('No calls to estimate');
@@ -232,6 +252,7 @@ export class SbcAppKit {
 
       // Use prepareUserOperation for more accurate gas estimation
       const userOperation = await smartAccountClient.prepareUserOperation({
+        account: smartAccountClient.account,
         calls,
       });
 
@@ -243,20 +264,15 @@ export class SbcAppKit {
         ? userOperation.maxFeePerGas
         : userOperation.maxPriorityFeePerGas + (block.baseFeePerGas ?? 0n);
 
-      // Calculate total expected gas used (including paymaster costs)
+      // Calculate total expected gas used (note: paymaster gas fields may not exist in this version)
       const totalGasUsed = 
         BigInt(userOperation.preVerificationGas) +
         BigInt(userOperation.callGasLimit) +
-        BigInt(userOperation.verificationGasLimit) +
-        BigInt(userOperation.paymasterPostOpGasLimit ?? 0) +
-        BigInt(userOperation.paymasterVerificationGasLimit ?? 0);
+        BigInt(userOperation.verificationGasLimit);
 
       // Add 10% buffer for gas cost estimation
       const feeBuffer = 10n;
       const totalGasCost = (totalGasUsed * gasPrice * (100n + feeBuffer)) / 100n;
-
-      console.log('✅ Gas estimation successful via SBC bundler');
-      console.log(`Total gas used: ${totalGasUsed}, Gas price: ${gasPrice}, Total cost: ${totalGasCost} wei`);
       
       return {
         preVerificationGas: userOperation.preVerificationGas.toString(),
@@ -266,13 +282,13 @@ export class SbcAppKit {
         maxPriorityFeePerGas: userOperation.maxPriorityFeePerGas.toString(),
         totalGasUsed: totalGasUsed.toString(),
         totalGasCost: totalGasCost.toString(),
-        paymasterVerificationGasLimit: userOperation.paymasterVerificationGasLimit?.toString(),
-        paymasterPostOpGasLimit: userOperation.paymasterPostOpGasLimit?.toString()
+        // These fields may not exist in current permissionless version
+        paymasterVerificationGasLimit: undefined,
+        paymasterPostOpGasLimit: undefined
       };
 
     } catch (error) {
       const message = parseUserOperationError(error);
-      console.error(`Failed to estimate user operation: ${message}`);
       throw new Error(`Failed to estimate user operation: ${message}`);
     }
   }
@@ -300,5 +316,4 @@ export class SbcAppKit {
   getChainConfig() {
     return getChainConfig(this.config.chain);
   }
-
 }

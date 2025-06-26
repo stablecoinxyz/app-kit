@@ -1,49 +1,25 @@
-# SBC App Kit - Monorepo
+# SBC App Kit
 
-A comprehensive SDK for SBC Account Abstraction infrastructure, organized as a monorepo with multiple packages for different use cases.
-
-## 📦 Packages
-
-### [@sbc/core](./packages/core)
-
-Core TypeScript SDK for backend and server-side usage.
-
-- ✅ **Backend focused**: Private key management, environment variables
-- ✅ **Account Abstraction**: Gasless transactions via ERC-4337
-- ✅ **Type-safe**: Full TypeScript support with comprehensive types
-
-### [@sbc/react](./packages/react)
-
-React hooks and components for frontend applications.
-
-- 🚧 **Coming soon**: React hooks for wallet connection and user operations
-- 🚧 **Components**: Pre-built UI components for wallet interaction
-- 🚧 **State management**: React Context for SBC integration
-
-### [@sbc/vanilla](./packages/vanilla)
-
-Browser-compatible JavaScript SDK for vanilla frontend applications.
-
-- 🚧 **Coming soon**: Browser wallet integration (MetaMask, WalletConnect)
-- 🚧 **Framework agnostic**: Works with any frontend framework
-- 🚧 **Lightweight**: Minimal dependencies for browser usage
+A TypeScript SDK for SBC Account Abstraction infrastructure - send gasless transactions on Base networks.
 
 ## 🚀 Quick Start
 
-### Backend Usage
+### Installation
 
 ```bash
 npm install @sbc/core
 ```
+
+### Basic Usage
 
 ```typescript
 import { SbcAppKit } from '@sbc/core';
 import { baseSepolia } from 'viem/chains';
 
 const sbcKit = new SbcAppKit({
-  apiKey: process.env.SBC_API_KEY!,
+  apiKey: 'sbc-your-api-key', // Get from SBC dashboard
   chain: baseSepolia,
-  privateKey: process.env.PRIVATE_KEY, // Optional
+  privateKey: '0x...', // Optional: auto-generated if not provided
 });
 
 // Send gasless transaction
@@ -52,75 +28,71 @@ const result = await sbcKit.sendUserOperation({
   data: '0x...',
   value: '0'
 });
+
+console.log('Transaction hash:', result.transactionHash);
 ```
 
-### React Usage (Coming Soon)
+## 📁 Package Structure
+
+- **[@sbc/core](./packages/core)** - Backend SDK (✅ Ready)
+- **[@sbc/react](./packages/react)** - React hooks (🚧 Coming soon)
+- **[@sbc/vanilla](./packages/vanilla)** - Browser SDK (🚧 Coming soon)
+
+## 🔧 Development
 
 ```bash
-npm install @sbc/react
+# Install dependencies
+npm install
+
+# Build packages
+npm run build
+npm run build:core
+
+# Run tests
+npm test
+
+# Run example
+export SBC_API_KEY="sbc-your-key"
+npm run examples:backend
 ```
 
-```tsx
-import { SbcProvider, useSbcKit } from '@sbc/react';
+## 📖 API Reference
 
-function App() {
-  return (
-    <SbcProvider config={{ apiKey: 'sbc-...', chain: baseSepolia }}>
-      <MyComponent />
-    </SbcProvider>
-  );
+### SbcAppKit
+
+```typescript
+interface SbcAppKitConfig {
+  apiKey: string;           // SBC API key
+  chain: Chain;             // viem Chain object
+  privateKey?: string;      // Optional private key
+  rpcUrl?: string;          // Optional custom RPC
+  paymasterUrl?: string;    // Optional paymaster URL
+  staging?: boolean;        // Use staging environment
 }
 ```
 
-## 🏗️ Development
+### Methods
 
-### Workspace Commands
+- `sendUserOperation(params)` - Send gasless transaction
+- `estimateUserOperation(params)` - Estimate gas costs
+- `getAccount()` - Get smart account info
+- `getOwnerAddress()` - Get EOA address
+- `getChain()` - Get current chain
 
-```bash
-# Install dependencies for all packages
-npm install
+### Supported Chains
 
-# Build all packages
-npm run build
+- Base Mainnet (`base`)
+- Base Sepolia (`baseSepolia`)
 
-# Build specific package
-npm run build:core
-npm run build:react
-npm run build:vanilla
+## 📝 Examples
 
-# Run tests for all packages
-npm run test
-
-# Lint all packages
-npm run lint
-```
-
-### Examples
-
-- **Backend**: [examples/backend](./examples/backend) - Server-side usage with environment variables
-- **React**: [examples/react-app](./examples/react-app) - React application example *(coming soon)*
-- **Vanilla**: [examples/vanilla-html](./examples/vanilla-html) - Plain JavaScript example *(coming soon)*
-
-## 📁 Project Structure
-
-```
-app-kit/
-├── packages/
-│   ├── core/          # @sbc/core - Backend SDK
-│   ├── react/         # @sbc/react - React hooks (coming soon)
-│   └── vanilla/       # @sbc/vanilla - Browser SDK (coming soon)
-├── examples/
-│   ├── backend/       # Backend examples
-│   ├── react-app/     # React examples (coming soon)
-│   └── vanilla-html/  # Vanilla JS examples (coming soon)
-└── package.json       # Workspace configuration
-```
+- [Backend Usage](./examples/backend) - Complete Node.js examples
+- [Error Handling](./examples/backend/error-handling-demo.ts) - Error decoding examples
 
 ## 🔗 Links
 
-- [Core Package Documentation](./packages/core/README.md)
-- [GitHub Repository](https://github.com/stablecoinxyz/app-kit)
-- [Issues](https://github.com/stablecoinxyz/app-kit/issues)
+- [Core Package Docs](./packages/core)
+- [GitHub Issues](https://github.com/stablecoinxyz/app-kit/issues)
 
 ## 📄 License
 

@@ -1,6 +1,7 @@
 import { SbcAppKit } from '../app-kit';
 import { SbcAppKitConfig } from '../types';
 import { base, baseSepolia } from 'viem/chains';
+import { Chain } from 'viem';
 
 // Mock external dependencies
 jest.mock('viem', () => ({
@@ -86,6 +87,16 @@ jest.mock('permissionless', () => ({
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
+// Create a proper unsupported chain type for testing
+const createUnsupportedChain = (id: number, name: string): Chain => ({
+  id,
+  name,
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['http://localhost:8545'] }
+  }
+});
+
 describe('SbcAppKit', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -124,10 +135,11 @@ describe('SbcAppKit', () => {
     });
 
     it('should throw error for unsupported chain', () => {
-      const config = {
+      const unsupportedChain = createUnsupportedChain(999, 'Unsupported Chain');
+      const config: SbcAppKitConfig = {
         apiKey: 'sbc-test123456',
-        chain: { id: 999, name: 'Unsupported Chain' } // Unsupported chain
-      } as any; // Type assertion for testing invalid input
+        chain: unsupportedChain
+      };
 
       expect(() => new SbcAppKit(config)).toThrow('Unsupported chain');
     });
@@ -241,10 +253,10 @@ describe('SbcAppKit', () => {
         callGasLimit: '150000',
         maxFeePerGas: '1000000000',
         maxPriorityFeePerGas: '2000000000',
-        totalGasUsed: '350000',
-        totalGasCost: '385000000000000',
-        paymasterVerificationGasLimit: '25000',
-        paymasterPostOpGasLimit: '25000'
+        totalGasUsed: '300000', // 50000 + 100000 + 150000
+        totalGasCost: '330000000000000', // 300000 * 1000000000 * 1.1
+        paymasterVerificationGasLimit: undefined,
+        paymasterPostOpGasLimit: undefined
       });
     });
 

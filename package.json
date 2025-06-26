@@ -1,7 +1,7 @@
 {
   "name": "@sbc/app-kit",
   "version": "0.1.0",
-  "description": "SBC Account Abstraction SDK - Monorepo",
+  "description": "SBC App Kit - a monorepo for the SBC Account Abstraction SDK",
   "private": true,
   "type": "module",
   "workspaces": [
