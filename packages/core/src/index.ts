@@ -4,6 +4,7 @@ export { SbcAppKit } from './app-kit';
 // Type exports for users
 export type {
   SbcAppKitConfig,
+  LoggingConfig,
   UserOperationParams,
   SendUserOperationParams,
   CallParams,

@@ -1,9 +1,7 @@
 // Browser-compatible JavaScript SDK for SBC Account Abstraction
-export * from './SbcBrowserKit';
-export * from './wallet-connectors';
-export * from './utils';
+// Note: Implementation files not yet created - this is a placeholder
 
-// Re-export core functionality
+// Re-export core functionality for browser usage
 export { SbcAppKit } from '@sbc/core';
 export type {
   SbcAppKitConfig,
@@ -12,5 +10,6 @@ export type {
   UserOperationEstimate,
   AccountInfo,
   ChainConfig,
-  RetryParams
+  SendUserOperationParams,
+  CallParams
 } from '@sbc/core'; 

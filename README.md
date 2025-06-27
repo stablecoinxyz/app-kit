@@ -35,7 +35,7 @@ console.log('Transaction hash:', result.transactionHash);
 ## 📁 Package Structure
 
 - **[@sbc/core](./packages/core)** - Backend SDK (✅ Ready)
-- **[@sbc/react](./packages/react)** - React hooks (🚧 Coming soon)
+- **[@sbc/react](./packages/react)** - React hooks & components (✅ Ready)
 - **[@sbc/vanilla](./packages/vanilla)** - Browser SDK (🚧 Coming soon)
 
 ## 🔧 Development
@@ -62,12 +62,13 @@ npm run examples:backend
 
 ```typescript
 interface SbcAppKitConfig {
-  apiKey: string;           // SBC API key
-  chain: Chain;             // viem Chain object
-  privateKey?: string;      // Optional private key
-  rpcUrl?: string;          // Optional custom RPC
-  paymasterUrl?: string;    // Optional paymaster URL
-  staging?: boolean;        // Use staging environment
+  apiKey: string;                    // SBC API key
+  chain: Chain;                      // viem Chain object
+  privateKey?: string;               // Optional: Custom private key (default: auto-generated)
+  rpcUrl?: string;                   // Optional: Custom RPC URL (default: chain's default RPC)
+  paymasterUrl?: string;             // Optional: Custom paymaster URL (default: SBC's paymaster)
+  debug?: boolean;                   // Optional: Enable debug logging (default: false)
+  logging?: LoggingConfig;           // Optional: Production logging configuration (default: disabled)
 }
 ```
 

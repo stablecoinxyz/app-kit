@@ -140,15 +140,15 @@ export BETTERSTACK_SOURCE_TOKEN="bt_1234567890abcdef"
 export NODE_ENV="production"
 export USER_ID="your-user-identifier"
 
-# Optional
-export PRIVATE_KEY="0xYourPrivateKeyHere"
-export SBC_DEBUG="true"
+# Optional (with defaults)
+export PRIVATE_KEY="0xYourPrivateKeyHere"  # Default: auto-generated
+export SBC_DEBUG="true"                    # Default: false
 ```
 
 ### Step 5: Update Your Code
 
 ```typescript
-import { SbcAppKit } from '@sbc/core';
+import { SbcAppKit, createBetterStackLogger } from '@sbc/core';
 
 const sbcApp = new SbcAppKit({
   apiKey: process.env.SBC_API_KEY!,
@@ -158,9 +158,7 @@ const sbcApp = new SbcAppKit({
   logging: {
     enabled: true,
     level: 'info',
-    betterStack: {
-      sourceToken: process.env.BETTERSTACK_SOURCE_TOKEN!
-    },
+    logger: createBetterStackLogger(process.env.BETTERSTACK_SOURCE_TOKEN!),
     context: {
       appName: 'my-dapp-backend',
       environment: process.env.NODE_ENV || 'development',
@@ -204,37 +202,37 @@ const account = await sbcApp.getAccount();
 
 ### Find Failed Operations
 
-```
+```text
 level:error
 ```
 
 ### Track Specific User
 
-```
+```text
 userId:"user_123"
 ```
 
 ### Monitor High Gas Usage
 
-```
+```text
 message:gas_estimation_completed AND gasUsed:>200000
 ```
 
 ### Chain-Specific Issues
 
-```
+```text
 chainName:"Base Sepolia"
 ```
 
 ### Session Flow Tracking
 
-```
+```text
 sessionId:"sbc_1705312200_abc123"
 ```
 
 ### Recent User Operations
 
-```
+```text
 message:user_operation_confirmed AND timestamp:>2024-01-15
 ```
 

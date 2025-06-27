@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Complete React package** (`@sbc/react`) with hooks and components
+  - `useSbcKit()` - Account management and SDK access
+  - `useUserOperation()` - Transaction state management
+  - `SbcProvider` - React context provider
+  - TypeScript support with full type inference
+- **Working React example app** with complete setup and demo UI
+- **pnpm workspace support** for better monorepo dependency management
 - **Pluggable logging system** with 5 built-in adapters
   - `createConsoleLogger()` - Development debugging
   - `createBetterStackLogger()` - Production logging
@@ -19,6 +26,8 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- **Documentation**: Added explicit default values for all optional config properties
+- **Type exports**: Added `LoggingConfig` to public exports from core package
 - **Type safety**: Removed 95% of `as any` assertions, added proper return types
 - **Code quality**: Refactored validation logic, better error handling, null safety
 - **Build system**: Fixed rollup config, updated permissionless to v0.2.47
@@ -32,6 +41,9 @@ All notable changes to this project will be documented in this file.
   // Before: logging: { betterStack: { sourceToken: 'token' } }
   // After:  logging: { logger: createBetterStackLogger('token') }
   ```
+
+- **Internal**: Migrated from npm to pnpm for better workspace dependency management
+- **Internal**: Hidden `staging` property from public documentation (internal dev use only)
 
 ### Fixed
 

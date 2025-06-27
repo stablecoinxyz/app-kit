@@ -3,14 +3,17 @@ export * from './hooks/useSbcKit';
 export * from './hooks/useUserOperation';
 export * from './components/SbcProvider';
 export * from './components/WalletConnect';
+export * from './types';
 
 // Re-export core types for convenience
 export type {
   SbcAppKitConfig,
+  SendUserOperationParams,
   UserOperationParams,
   UserOperationResult,
   UserOperationEstimate,
   AccountInfo,
   ChainConfig,
-  RetryParams
+  CallParams,
+  LoggingConfig
 } from '@sbc/core'; 

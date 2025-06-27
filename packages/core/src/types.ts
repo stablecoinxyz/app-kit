@@ -7,22 +7,40 @@ export interface SbcAppKitConfig {
   /** Blockchain network to operate on */
   chain: Chain;
   
-  /** Optional: Custom wallet private key. If not provided, a random wallet will be generated */
+  /** 
+   * Optional: Custom wallet private key 
+   * @default Auto-generated random private key
+   */
   privateKey?: Hex;
   
-  /** Optional: Custom RPC URL for the blockchain */
+  /** 
+   * Optional: Custom RPC URL for the blockchain 
+   * @default Chain's default RPC URL
+   */
   rpcUrl?: string;
   
-  /** Optional: Custom paymaster URL */
+  /** 
+   * Optional: Custom paymaster URL 
+   * @default SBC's managed paymaster service
+   */
   paymasterUrl?: string;
   
-  /** Optional: Use staging environment */
+  /** 
+   * Internal: Use staging environment (for SBC development only)
+   * @internal
+   */
   staging?: boolean;
   
-  /** Optional: Enable debug logging */
+  /** 
+   * Optional: Enable debug logging 
+   * @default false
+   */
   debug?: boolean;
   
-  /** Optional: Production logging configuration */
+  /** 
+   * Optional: Production logging configuration 
+   * @default Logging disabled
+   */
   logging?: LoggingConfig;
 }
 
@@ -36,7 +54,10 @@ export interface LoggingConfig {
   /** Logger function - implement your own or use provided adapters */
   logger: (level: string, message: string, metadata: Record<string, any>) => void | Promise<void>;
   
-  /** Application context for log enrichment */
+  /** 
+   * Optional: Application context for log enrichment 
+   * @default No additional context
+   */
   context?: {
     /** Your application name */
     appName?: string;
@@ -52,10 +73,16 @@ export interface LoggingConfig {
     [key: string]: any;
   };
   
-  /** Include sensitive data in logs (default: false for production) */
+  /** 
+   * Optional: Include sensitive data in logs 
+   * @default false
+   */
   includeSensitive?: boolean;
   
-  /** Sampling rate for performance logs (0.0 to 1.0, default: 1.0) */
+  /** 
+   * Optional: Sampling rate for performance logs (0.0 to 1.0) 
+   * @default 1.0 (log all operations)
+   */
   samplingRate?: number;
 }
 
