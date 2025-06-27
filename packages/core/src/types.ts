@@ -162,6 +162,9 @@ export interface AccountInfo {
   
   /** Current nonce of the account */
   nonce: number;
+  
+  /** Account balance in wei */
+  balance: string;
 }
 
 export interface ChainConfig {

@@ -156,6 +156,10 @@ export function parseUserOperationError(error: unknown): string {
   }
 
   // Look for other common error patterns
+  if (baseMessage.includes('AA21 didn\'t pay prefund')) {
+    return `${baseMessage}\n\nSuggestion: Your smart account needs a small amount of ETH (even for gasless transactions) to cover verification costs. Please fund your smart account with at least 0.001 ETH.`;
+  }
+
   if (baseMessage.includes('insufficient funds')) {
     return `${baseMessage}\n\nSuggestion: Ensure your account has enough ETH/tokens for this transaction`;
   }

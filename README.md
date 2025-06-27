@@ -36,7 +36,6 @@ console.log('Transaction hash:', result.transactionHash);
 
 - **[@sbc/core](./packages/core)** - Backend SDK (✅ Ready)
 - **[@sbc/react](./packages/react)** - React hooks & components (✅ Ready)
-- **[@sbc/vanilla](./packages/vanilla)** - Browser SDK (🚧 Coming soon)
 
 ## 🔧 Development
 

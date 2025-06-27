@@ -44,6 +44,7 @@ All notable changes to this project will be documented in this file.
 
 - **Internal**: Migrated from npm to pnpm for better workspace dependency management
 - **Internal**: Hidden `staging` property from public documentation (internal dev use only)
+- **Internal**: Removed @sbc/vanilla package (deferred to post-demo evaluation)
 
 ### Fixed
 

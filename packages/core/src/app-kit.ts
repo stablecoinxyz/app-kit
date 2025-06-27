@@ -1,4 +1,4 @@
-import { Address, PublicClient, WalletClient, parseEther, http, LocalAccount } from 'viem';
+import { Address, PublicClient, WalletClient, http, LocalAccount } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { entryPoint07Address, createPaymasterClient } from 'viem/account-abstraction';
 import { toKernelSmartAccount } from 'permissionless/accounts';
@@ -276,7 +276,7 @@ export class SbcAppKit {
     return [{
       to: params.to,
       data: params.data,
-      value: params.value ? parseEther(params.value) : 0n
+      value: params.value ? BigInt(params.value) : 0n
     }];
   }
 
@@ -395,10 +395,15 @@ export class SbcAppKit {
         }
       }
 
+      // Get account balance
+      const balance = await this.publicClient.getBalance({ address });
+      this.logInfo('account_balance_retrieved', { balance: balance.toString() });
+
       const result = {
         address,
         isDeployed,
-        nonce
+        nonce,
+        balance: balance.toString() // Balance in wei
       };
       
       this.logInfo('account_info_retrieved', result);
@@ -432,56 +437,82 @@ export class SbcAppKit {
         throw new Error('No calls to estimate');
       }
 
-      // Use prepareUserOperation for more accurate gas estimation
-      const userOperation = await smartAccountClient.prepareUserOperation({
+      // First prepare the user operation to get the proper structure with all required fields
+      this.logInfo('preparing_user_operation_for_estimation');
+      const preparedUserOp = await smartAccountClient.prepareUserOperation({
         account: smartAccountClient.account,
         calls,
       });
-      
-      this.logInfo('user_operation_prepared', {
-        preVerificationGas: userOperation.preVerificationGas.toString(),
-        verificationGasLimit: userOperation.verificationGasLimit.toString(),
-        callGasLimit: userOperation.callGasLimit.toString()
+
+      this.logInfo('prepared_user_operation_details', {
+        sender: preparedUserOp.sender,
+        nonce: preparedUserOp.nonce.toString(),
+        hasPaymasterAndData: !!preparedUserOp.paymasterAndData && preparedUserOp.paymasterAndData !== '0x',
+        paymasterAndDataLength: preparedUserOp.paymasterAndData?.length || 0
       });
 
-      // Get current block for base fee calculation
-      const block = await this.publicClient.getBlock();
+      // Now use the prepared user operation for gas estimation
+      this.logInfo('estimating_gas_with_prepared_operation');
+      const gasEstimate = await smartAccountClient.estimateUserOperationGas({
+        account: smartAccountClient.account,
+        calls,
+        // Include the prepared fields that might be needed
+        maxFeePerGas: preparedUserOp.maxFeePerGas,
+        maxPriorityFeePerGas: preparedUserOp.maxPriorityFeePerGas,
+      });
 
-      // Calculate effective gas price (using min like your sample)
-      const gasPrice = userOperation.maxFeePerGas < (userOperation.maxPriorityFeePerGas + (block.baseFeePerGas ?? 0n))
-        ? userOperation.maxFeePerGas
-        : userOperation.maxPriorityFeePerGas + (block.baseFeePerGas ?? 0n);
+      this.logInfo('permissionless_gas_estimation_success', {
+        preVerificationGas: gasEstimate.preVerificationGas.toString(),
+        verificationGasLimit: gasEstimate.verificationGasLimit.toString(),
+        callGasLimit: gasEstimate.callGasLimit.toString(),
+        paymasterVerificationGasLimit: gasEstimate.paymasterVerificationGasLimit?.toString(),
+        paymasterPostOpGasLimit: gasEstimate.paymasterPostOpGasLimit?.toString()
+      });
 
-      // Calculate total expected gas used (note: paymaster gas fields may not exist in this version)
+      // Log the account balance to help debug AA21 errors
+      const accountBalance = await this.publicClient.getBalance({ 
+        address: smartAccountClient.account.address 
+      });
+      this.logInfo('account_balance_during_estimation', { 
+        balance: accountBalance.toString(),
+        balanceInEth: (Number(accountBalance) / 1e18).toFixed(6)
+      });
+
+      // Use the gas prices from the prepared user operation
+      const gasPrice = preparedUserOp.maxFeePerGas;
+
+      // Calculate total expected gas used (including paymaster gas)
       const totalGasUsed = 
-        BigInt(userOperation.preVerificationGas) +
-        BigInt(userOperation.callGasLimit) +
-        BigInt(userOperation.verificationGasLimit);
+        gasEstimate.preVerificationGas + 
+        gasEstimate.verificationGasLimit + 
+        gasEstimate.callGasLimit + 
+        (gasEstimate.paymasterVerificationGasLimit || 0n) + 
+        (gasEstimate.paymasterPostOpGasLimit || 0n);
 
       // Add 10% buffer for gas cost estimation
       const feeBuffer = 10n;
       const totalGasCost = (totalGasUsed * gasPrice * (100n + feeBuffer)) / 100n;
       
-      const result = {
-        preVerificationGas: userOperation.preVerificationGas.toString(),
-        verificationGasLimit: userOperation.verificationGasLimit.toString(),
-        callGasLimit: userOperation.callGasLimit.toString(),
-        maxFeePerGas: userOperation.maxFeePerGas.toString(),
-        maxPriorityFeePerGas: userOperation.maxPriorityFeePerGas.toString(),
+      const estimateResult = {
+        preVerificationGas: gasEstimate.preVerificationGas.toString(),
+        verificationGasLimit: gasEstimate.verificationGasLimit.toString(),
+        callGasLimit: gasEstimate.callGasLimit.toString(),
+        maxFeePerGas: preparedUserOp.maxFeePerGas.toString(),
+        maxPriorityFeePerGas: preparedUserOp.maxPriorityFeePerGas.toString(),
         totalGasUsed: totalGasUsed.toString(),
         totalGasCost: totalGasCost.toString(),
-        // These fields may not exist in current permissionless version
-        paymasterVerificationGasLimit: undefined,
-        paymasterPostOpGasLimit: undefined
+        paymasterVerificationGasLimit: gasEstimate.paymasterVerificationGasLimit?.toString(),
+        paymasterPostOpGasLimit: gasEstimate.paymasterPostOpGasLimit?.toString()
       };
       
       this.logInfo('gas_estimation_completed', { 
-        totalGasUsed: result.totalGasUsed, 
-        totalGasCost: result.totalGasCost,
-        gasPrice: gasPrice.toString()
+        totalGasUsed: estimateResult.totalGasUsed, 
+        totalGasCost: estimateResult.totalGasCost,
+        gasPrice: gasPrice.toString(),
+        paymasterWillCoverCosts: !!(gasEstimate.paymasterVerificationGasLimit || gasEstimate.paymasterPostOpGasLimit)
       });
       
-      return result;
+      return estimateResult;
 
     } catch (error) {
       const message = parseUserOperationError(error);
