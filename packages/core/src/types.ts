@@ -1,5 +1,14 @@
 import { Address, Hex, Chain } from 'viem';
 
+export interface AaProxyConfig {
+  /** Blockchain network to operate on */
+  chain: Chain;
+  /** SBC API key for accessing services */
+  apiKey: string;
+  /** Whether to use staging environment */
+  staging?: boolean;
+}
+
 export interface SbcAppKitConfig {
   /** Your SBC API key for accessing paymaster services */
   apiKey: string;
@@ -18,12 +27,6 @@ export interface SbcAppKitConfig {
    * @default Chain's default RPC URL
    */
   rpcUrl?: string;
-  
-  /** 
-   * Optional: Custom paymaster URL 
-   * @default SBC's managed paymaster service
-   */
-  paymasterUrl?: string;
   
   /** 
    * Internal: Use staging environment (for SBC development only)
@@ -174,9 +177,15 @@ export interface ChainConfig {
   /** Chain name */
   name: string;
   
+  /** Stringidentifier for API endpoints */
+  idString: string;
+  
   /** Default RPC URL */
   rpcUrl: string;
   
   /** SBC AA Proxy URL */
   aaProxyUrl: string;
+  
+  /** Block explorer URL */
+  blockExplorerUrl: string;
 }

@@ -34,23 +34,18 @@ describe('Utils Functions', () => {
 
   describe('buildAaProxyUrl', () => {
     it('should build URL for base chain', () => {
-      const url = buildAaProxyUrl(base, 'sbc-test123');
+      const url = buildAaProxyUrl({ chain: base, apiKey: 'sbc-test123' });
       expect(url).toBe('https://api.aa.stablecoin.xyz/rpc/v1/base/sbc-test123');
     });
 
     it('should build URL with staging flag', () => {
-      const url = buildAaProxyUrl(baseSepolia, 'sbc-test123', true);
+      const url = buildAaProxyUrl({ chain: baseSepolia, apiKey: 'sbc-test123', staging: true });
       expect(url).toBe('https://api.aa.stablecoin.xyz/rpc/v1/baseSepolia/sbc-test123?staging=true');
-    });
-
-    it('should build URL with custom base URL', () => {
-      const url = buildAaProxyUrl(base, 'sbc-test123', false, 'https://custom.api.com');
-      expect(url).toBe('https://custom.api.com/rpc/v1/base/sbc-test123');
     });
 
     it('should throw error for unsupported chain', () => {
       const unsupportedChain = createUnsupportedChain(999, 'Unsupported');
-      expect(() => buildAaProxyUrl(unsupportedChain, 'sbc-test123')).toThrow('Unsupported chain');
+      expect(() => buildAaProxyUrl({ chain: unsupportedChain, apiKey: 'sbc-test123' })).toThrow('Unsupported chain');
     });
   });
 

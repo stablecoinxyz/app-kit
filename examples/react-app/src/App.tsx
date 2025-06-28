@@ -7,7 +7,7 @@ import {
 } from '@sbc/react';
 import './App.css';
 import { Hex, encodeFunctionData } from 'viem';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * SBC Account Abstraction Demo
@@ -26,7 +26,6 @@ import { useState, useEffect } from 'react';
 const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16'; // Base Sepolia
 const SBC_DECIMALS = 6;
 const TRANSFER_AMOUNT = BigInt('1000000'); // 1 SBC (6 decimals)
-const TARGET_ADDRESS = '0xbb46C0C1792d7b606Db07cead656efd93b433222'; // SBC Deployer
 const PERMIT_DURATION_SECONDS = 600; // 10 minutes
 
 const config: SbcAppKitConfig = {
@@ -101,7 +100,7 @@ function Dashboard() {
 
   const { 
     sendUserOperation, 
-    estimateUserOperation,
+    // estimateUserOperatestimateUserOperationion,
     isLoading, 
     isSuccess, 
     isError, 
@@ -120,36 +119,47 @@ function Dashboard() {
     }
   });
 
+  // State for target address input
+  const [targetAddress, setTargetAddress] = useState<string>('');
+  const [addressError, setAddressError] = useState<string>('');
+
   // State for gas estimation
-  const [gasEstimate, setGasEstimate] = useState<any>(null);
-  const [isEstimating, setIsEstimating] = useState(false);
-  const [estimationError, setEstimationError] = useState<string | null>(null);
+  // const [gasEstimate, setGasEstimate] = useState<any>(null);
+  // const [isEstimating, setIsEstimating] = useState(false);
+  // const [estimationError, setEstimationError] = useState<string | null>(null);
 
   // State for balances
   const [ownerBalances, setOwnerBalances] = useState<{eth: string | null, sbc: string | null}>({eth: null, sbc: null});
   const [smartAccountBalances, setSmartAccountBalances] = useState<{eth: string | null, sbc: string | null}>({eth: null, sbc: null});
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
 
-  // Function to fetch both ETH and SBC balances for a specific address
-  const fetchBalancesForAddress = async (address: string): Promise<{eth: string, sbc: string}> => {
-    const publicClient = (sbcKit as any).publicClient;
+  // Function to fetch balances for a specific address
+  const fetchBalancesForAddress = useCallback(async (address: string): Promise<{eth: string, sbc: string}> => {
+    if (!sbcKit) return {eth: '0', sbc: '0'};
 
-    // Fetch ETH balance
-    const ethBalance = await publicClient.getBalance({ address });
-    
-    // Fetch SBC token balance
-    const sbcBalance = await publicClient.readContract({
-      address: SBC_TOKEN_ADDRESS,
-      abi: ERC20_ABI.balanceOf,
-      functionName: 'balanceOf',
-      args: [address]
-    });
+    try {
+      const publicClient = (sbcKit as any).publicClient;
+      
+      // Fetch ETH and SBC balances in parallel
+      const [ethBalance, sbcBalance] = await Promise.all([
+        publicClient.getBalance({ address: address as `0x${string}` }),
+        publicClient.readContract({
+          address: SBC_TOKEN_ADDRESS,
+          abi: ERC20_ABI.balanceOf,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`]
+        })
+      ]);
 
-    return {
-      eth: ethBalance.toString(),
-      sbc: sbcBalance.toString()
-    };
-  };
+      return {
+        eth: ethBalance.toString(),
+        sbc: sbcBalance.toString()
+      };
+    } catch (error) {
+      console.error(`Failed to fetch balances for ${address}:`, error);
+      return {eth: '0', sbc: '0'};
+    }
+  }, [sbcKit]);
 
   // Helper function to format SBC balance
   const formatSbcBalance = (balance: string | null): string => {
@@ -163,8 +173,15 @@ function Dashboard() {
     return (parseFloat(balance) / 1e18).toFixed(6);
   };
 
+  // Helper function to get explorer URL for transaction hash
+  const getExplorerUrl = (txHash: string): string => {
+    if (!sbcKit) throw new Error('SBC AppKit not initialized');
+    const chainConfig = sbcKit.getChainConfig();
+    return `${chainConfig.blockExplorerUrl}/tx/${txHash}`;
+  };
+
   // Function to fetch all balances
-  const fetchAllBalances = async () => {
+  const fetchAllBalances = useCallback(async () => {
     if (!sbcKit || !account?.address) return;
 
     setIsLoadingBalances(true);
@@ -186,18 +203,18 @@ function Dashboard() {
     } finally {
       setIsLoadingBalances(false);
     }
-  };
+  }, [sbcKit, account?.address, fetchBalancesForAddress]);
 
   // Fetch balances when account changes
   useEffect(() => {
     if (account?.address && sbcKit) {
       fetchAllBalances();
     }
-  }, [account?.address, sbcKit]);
+  }, [account?.address, sbcKit, fetchAllBalances]);
 
   // Helper function to create permit signature for EIP-2612
   const createPermitSignature = async (amount: bigint, deadline: number) => {
-    if (!sbcKit || !account?.address) throw new Error('SBC Kit not initialized');
+    if (!sbcKit || !account?.address) throw new Error('SBC App Kit not initialized');
 
     const ownerAddress = sbcKit.getOwnerAddress();
     const smartAccountAddress = account.address;
@@ -293,11 +310,31 @@ function Dashboard() {
     });
   };
 
+  // Helper function to validate Ethereum address
+  const validateAddress = (address: string): boolean => {
+    // Check if it's a valid hex string starting with 0x and 42 characters long
+    const addressRegex = /^0x[a-fA-F0-9]{40}$/;
+    return addressRegex.test(address);
+  };
+
+  // Handle address input change
+  const handleAddressChange = (value: string) => {
+    setTargetAddress(value);
+    
+    if (value === '') {
+      setAddressError('');
+    } else if (!validateAddress(value)) {
+      setAddressError('Please enter a valid Ethereum address (0x followed by 40 hex characters)');
+    } else {
+      setAddressError('');
+    }
+  };
+
   // Helper function to send simple SBC transfer
-  const sendSimpleTransfer = async () => {
+  const sendSimpleTransfer = async (toAddress: string) => {
     console.log('Smart account has sufficient balance, sending simple transfer');
     
-    const transferData = createTransferCallData(TARGET_ADDRESS, TRANSFER_AMOUNT);
+    const transferData = createTransferCallData(toAddress, TRANSFER_AMOUNT);
     
     await sendUserOperation({
       to: SBC_TOKEN_ADDRESS,
@@ -307,7 +344,7 @@ function Dashboard() {
   };
 
   // Helper function to send permit + transferFrom + transfer multi-call
-  const sendPermitTransfer = async () => {
+  const sendPermitTransfer = async (toAddress: string) => {
     console.log('Owner has sufficient balance, creating permit + transferFrom + transfer multi-call');
     
     const deadline = Math.floor(Date.now() / 1000) + PERMIT_DURATION_SECONDS;
@@ -317,7 +354,7 @@ function Dashboard() {
 
     const permitData = createPermitCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT, deadline, sig);
     const transferFromData = createTransferFromCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT);
-    const finalTransferData = createTransferCallData(TARGET_ADDRESS, TRANSFER_AMOUNT);
+    const finalTransferData = createTransferCallData(toAddress, TRANSFER_AMOUNT);
 
     await sendUserOperation({
       calls: [
@@ -329,7 +366,7 @@ function Dashboard() {
   };
 
   const handleSendTransaction = async () => {
-    if (!sbcKit) return;
+    if (!sbcKit || !targetAddress || addressError) return;
 
     try {
       // Get current balances
@@ -339,10 +376,10 @@ function Dashboard() {
       // Determine transaction strategy based on available balances
       if (smartAccountSbcBalance >= TRANSFER_AMOUNT) {
         // Smart account has sufficient balance - simple transfer
-        await sendSimpleTransfer();
+        await sendSimpleTransfer(targetAddress);
       } else if (ownerSbcBalance >= TRANSFER_AMOUNT) {
         // Owner has sufficient balance - permit + transferFrom + transfer
-        await sendPermitTransfer();
+        await sendPermitTransfer(targetAddress);
       } else {
         // Neither account has sufficient balance
         const smartAccountSbc = (Number(smartAccountSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
@@ -362,82 +399,82 @@ function Dashboard() {
   // Gas Estimation Functions
   // To re-enable: Uncomment the gas estimation button and results UI sections below
   
-  // Helper function to estimate gas for simple transfer
-  const estimateSimpleTransfer = async () => {
-    console.log('Estimating gas for simple transfer');
-    const transferData = createTransferCallData(TARGET_ADDRESS, TRANSFER_AMOUNT);
+  // // Helper function to estimate gas for simple transfer
+  // const estimateSimpleTransfer = async () => {
+  //   console.log('Estimating gas for simple transfer');
+  //   const transferData = createTransferCallData(targetAddress, TRANSFER_AMOUNT);
     
-    return await estimateUserOperation({
-      to: SBC_TOKEN_ADDRESS,
-      data: transferData,
-      value: '0'
-    });
-  };
+  //   return await estimateUserOperation({
+  //     to: SBC_TOKEN_ADDRESS,
+  //     data: transferData,
+  //     value: '0'
+  //   });
+  // };
 
-  // Helper function to estimate gas for permit transfer
-  const estimatePermitTransfer = async () => {
-    console.log('Estimating gas for permit + transferFrom + transfer multi-call');
+  // // Helper function to estimate gas for permit transfer
+  // const estimatePermitTransfer = async () => {
+  //   console.log('Estimating gas for permit + transferFrom + transfer multi-call');
     
-    const deadline = Math.floor(Date.now() / 1000) + PERMIT_DURATION_SECONDS;
-    const { sig } = await createPermitSignature(TRANSFER_AMOUNT, deadline);
-    const ownerAddress = sbcKit!.getOwnerAddress();
-    const smartAccountAddress = account!.address;
+  //   const deadline = Math.floor(Date.now() / 1000) + PERMIT_DURATION_SECONDS;
+  //   const { sig } = await createPermitSignature(TRANSFER_AMOUNT, deadline);
+  //   const ownerAddress = sbcKit!.getOwnerAddress();
+  //   const smartAccountAddress = account!.address;
 
-    const permitData = createPermitCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT, deadline, sig);
-    const transferFromData = createTransferFromCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT);
-    const finalTransferData = createTransferCallData(TARGET_ADDRESS, TRANSFER_AMOUNT);
+  //   const permitData = createPermitCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT, deadline, sig);
+  //   const transferFromData = createTransferFromCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT);
+  //   const finalTransferData = createTransferCallData(targetAddress, TRANSFER_AMOUNT);
 
-    return await estimateUserOperation({
-      calls: [
-        { to: SBC_TOKEN_ADDRESS, data: permitData, value: 0n },
-        { to: SBC_TOKEN_ADDRESS, data: transferFromData, value: 0n },
-        { to: SBC_TOKEN_ADDRESS, data: finalTransferData, value: 0n }
-      ]
-    });
-  };
+  //   return await estimateUserOperation({
+  //     calls: [
+  //       { to: SBC_TOKEN_ADDRESS, data: permitData, value: 0n },
+  //       { to: SBC_TOKEN_ADDRESS, data: transferFromData, value: 0n },
+  //       { to: SBC_TOKEN_ADDRESS, data: finalTransferData, value: 0n }
+  //     ]
+  //   });
+  // };
 
-  const handleEstimateGas = async () => {
-    if (!sbcKit) return;
+  // const handleEstimateGas = async () => {
+  //   if (!sbcKit) return;
 
-    setIsEstimating(true);
-    setEstimationError(null);
-    setGasEstimate(null);
+  //   setIsEstimating(true);
+  //   setEstimationError(null);
+  //   setGasEstimate(null);
 
-    try {
-      // Get current balances
-      const smartAccountSbcBalance = smartAccountBalances.sbc ? BigInt(smartAccountBalances.sbc) : 0n;
-      const ownerSbcBalance = ownerBalances.sbc ? BigInt(ownerBalances.sbc) : 0n;
+  //   try {
+  //     // Get current balances
+  //     const smartAccountSbcBalance = smartAccountBalances.sbc ? BigInt(smartAccountBalances.sbc) : 0n;
+  //     const ownerSbcBalance = ownerBalances.sbc ? BigInt(ownerBalances.sbc) : 0n;
 
-      let estimate;
+  //     let estimate;
 
-      // Determine estimation strategy based on available balances
-      if (smartAccountSbcBalance >= TRANSFER_AMOUNT) {
-        // Smart account has sufficient balance - estimate simple transfer
-        estimate = await estimateSimpleTransfer();
-      } else if (ownerSbcBalance >= TRANSFER_AMOUNT) {
-        // Owner has sufficient balance - estimate permit transfer
-        estimate = await estimatePermitTransfer();
-      } else {
-        // Neither account has sufficient balance
-        const smartAccountSbc = (Number(smartAccountSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
-        const ownerSbc = (Number(ownerSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
-        const requiredSbc = (Number(TRANSFER_AMOUNT) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
+  //     // Determine estimation strategy based on available balances
+  //     if (smartAccountSbcBalance >= TRANSFER_AMOUNT) {
+  //       // Smart account has sufficient balance - estimate simple transfer
+  //       estimate = await estimateSimpleTransfer();
+  //     } else if (ownerSbcBalance >= TRANSFER_AMOUNT) {
+  //       // Owner has sufficient balance - estimate permit transfer
+  //       estimate = await estimatePermitTransfer();
+  //     } else {
+  //       // Neither account has sufficient balance
+  //       const smartAccountSbc = (Number(smartAccountSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
+  //       const ownerSbc = (Number(ownerSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
+  //       const requiredSbc = (Number(TRANSFER_AMOUNT) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
         
-        throw new Error(
-          `Insufficient SBC balance. Need ${requiredSbc} SBC. ` +
-          `Smart account has ${smartAccountSbc} SBC, Owner has ${ownerSbc} SBC.`
-        );
-      }
+  //       throw new Error(
+  //         `Insufficient SBC balance. Need ${requiredSbc} SBC. ` +
+  //         `Smart account has ${smartAccountSbc} SBC, Owner has ${ownerSbc} SBC.`
+  //       );
+  //     }
 
-      console.log('Gas estimate:', estimate);
-      setGasEstimate(estimate);
-    } catch (error) {
-      console.error('Failed to estimate gas:', error);
-      setEstimationError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setIsEstimating(false);
-    }
-  };
+  //     console.log('Gas estimate:', estimate);
+  //     setGasEstimate(estimate);
+  //   } catch (error) {
+  //     console.error('Failed to estimate gas:', error);
+  //     setEstimationError(error instanceof Error ? error.message : 'Unknown error');
+  //   } finally {
+  //     setIsEstimating(false);
+  //   }
+  // };
 
   if (error) {
     return (
@@ -526,10 +563,39 @@ function Dashboard() {
       {/* Transaction Controls */}
       <div className="card">
         <h3>💸 Send SBC Transaction</h3>
-        <p>Send {(Number(TRANSFER_AMOUNT) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS)} SBC to SBC Deployer</p>
-        <p style={{fontSize: '0.85em', color: '#666', marginTop: '8px'}}>
-          Target: <code style={{background: '#f5f5f5', padding: '2px 4px', borderRadius: '3px'}}>{TARGET_ADDRESS}</code>
-        </p>
+        <p>Send 1 SBC to any address</p>
+        
+        {/* Address Input */}
+        <div style={{marginBottom: '16px'}}>
+          <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>
+            Recipient Address:
+          </label>
+          <input
+            type="text"
+            value={targetAddress}
+            onChange={(e) => handleAddressChange(e.target.value)}
+            placeholder="0x... (Enter recipient's Ethereum address)"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              border: `1px solid ${addressError ? '#ff4444' : '#ddd'}`,
+              borderRadius: '4px',
+              fontSize: '14px',
+              fontFamily: 'monospace'
+            }}
+          />
+          {addressError && (
+            <p style={{color: '#ff4444', fontSize: '0.85em', marginTop: '4px'}}>
+              {addressError}
+            </p>
+          )}
+          {targetAddress && !addressError && (
+            <p style={{fontSize: '0.85em', color: '#666', marginTop: '4px'}}>
+              ✅ Valid address
+            </p>
+          )}
+        </div>
+
         <p style={{fontSize: '0.85em', color: '#666', marginBottom: '12px'}}>
           💡 Smart Transaction: the smart account can have zero SBC balance and will transfer SBC from Owner's balance if it has enough.
         </p>
@@ -545,16 +611,36 @@ function Dashboard() {
           */}
           <button 
             onClick={handleSendTransaction}
-            disabled={isLoading || (
+            disabled={isLoading || !targetAddress || !!addressError || (
               smartAccountBalances.sbc !== null && 
               ownerBalances.sbc !== null && 
               (BigInt(smartAccountBalances.sbc) + BigInt(ownerBalances.sbc)) < TRANSFER_AMOUNT
             )}
             className="primary"
           >
-            {isLoading ? '⏳ Sending...' : `🚀 Send ${(Number(TRANSFER_AMOUNT) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS)} SBC`}
+            {isLoading ? '⏳ Sending...' : `🚀 Send 1 SBC`}
           </button>
         </div>
+
+        {!targetAddress && (
+          <p style={{fontSize: '0.85em', color: '#999', marginTop: '8px', textAlign: 'center'}}>
+            👆 Enter a recipient address to enable sending
+          </p>
+        )}
+
+        {targetAddress && addressError && (
+          <p style={{fontSize: '0.85em', color: '#ff4444', marginTop: '8px', textAlign: 'center'}}>
+            ❌ Please enter a valid address to enable sending
+          </p>
+        )}
+
+        {smartAccountBalances.sbc !== null && 
+         ownerBalances.sbc !== null && 
+         (BigInt(smartAccountBalances.sbc) + BigInt(ownerBalances.sbc)) < TRANSFER_AMOUNT && (
+          <p style={{fontSize: '0.85em', color: '#ff4444', marginTop: '8px', textAlign: 'center'}}>
+            ❌ Insufficient SBC balance across both accounts
+          </p>
+        )}
 
         {/* Transaction Status */}
         {isLoading && (
@@ -566,7 +652,23 @@ function Dashboard() {
         {isSuccess && txResult && (
           <div className="status success">
             <p>✅ Transaction successful!</p>
-            <p><strong>TX Hash:</strong> {txResult.transactionHash}</p>
+            <p>
+              <strong>TX Hash:</strong>{' '}
+              <a 
+                href={getExplorerUrl(txResult.transactionHash)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  color: '#0052ff',
+                  textDecoration: 'underline',
+                  fontFamily: 'monospace',
+                  fontSize: '0.9em',
+                  wordBreak: 'break-all'
+                }}
+              >
+                {txResult.transactionHash}
+              </a>
+            </p>
             <p><strong>Gas Used:</strong> {txResult.gasUsed}</p>
             <button onClick={reset}>Clear</button>
           </div>

@@ -52,12 +52,11 @@ export class SbcAppKit {
     }
     
     // Build Account Abstraction API URL
-    this.aaProxyUrl = buildAaProxyUrl(
-      config.chain,
-      config.apiKey,
-      config.staging,
-      config.paymasterUrl
-    );
+    this.aaProxyUrl = buildAaProxyUrl({
+      chain: config.chain,
+      apiKey: config.apiKey,
+      staging: config.staging
+    });
 
     // Log initialization
     this.logInfo('sdk_initialized', {
@@ -91,20 +90,15 @@ export class SbcAppKit {
    * Enhanced logging system for both debug and production
    */
   private log(level: 'error' | 'warn' | 'info' | 'debug', event: string, metadata: Record<string, any> = {}): void {
-    const timestamp = new Date().toISOString();
     const baseMetadata = {
       sessionId: this.sessionId,
       chainId: this.config.chain.id,
       chainName: this.config.chain.name,
-      timestamp,
+      timestamp: new Date().toISOString(),
       event,
-      ...metadata
+      ...metadata,
+      ...this.config.logging?.context
     };
-
-    // Add context if provided
-    if (this.config.logging?.context) {
-      Object.assign(baseMetadata, this.config.logging.context);
-    }
 
     // Debug logging (development)
     if (this.debug) {
@@ -123,28 +117,15 @@ export class SbcAppKit {
         ? baseMetadata 
         : this.sanitizeMetadata(baseMetadata);
 
-      if (this.logger) {
-        // Custom logger function (for integration with logging platforms)
-        this.logger(level, event, logMetadata);
-      }
+      this.logger?.(level, event, logMetadata);
     }
   }
 
-  private logError(event: string, metadata: Record<string, any> = {}): void {
-    this.log('error', event, metadata);
-  }
-
-  private logWarn(event: string, metadata: Record<string, any> = {}): void {
-    this.log('warn', event, metadata);
-  }
-
-  private logInfo(event: string, metadata: Record<string, any> = {}): void {
-    this.log('info', event, metadata);
-  }
-
-  private logDebug(event: string, metadata: Record<string, any> = {}): void {
-    this.log('debug', event, metadata);
-  }
+  // Consolidated logging methods using arrow functions for better performance
+  private readonly logError = (event: string, metadata: Record<string, any> = {}) => this.log('error', event, metadata);
+  private readonly logWarn = (event: string, metadata: Record<string, any> = {}) => this.log('warn', event, metadata);
+  private readonly logInfo = (event: string, metadata: Record<string, any> = {}) => this.log('info', event, metadata);
+  private readonly logDebug = (event: string, metadata: Record<string, any> = {}) => this.log('debug', event, metadata);
 
   /**
    * Check if we should log based on configured level
@@ -198,20 +179,20 @@ export class SbcAppKit {
   }
 
   /**
-   * Initialize the SimpleAccount client using SBC's infrastructure
+   * Initialize the Smart Account client using SBC's infrastructure. 
+   * Currently using Kernel Smart Account from ZeroDev.
    */
-  private async initializeSmartAccountClient() {
+  private async initializeSmartAccountClient(): Promise<SmartAccountClient> {
     if (this.smartAccountClient) {
       return this.smartAccountClient;
     }
 
+    if (!this.walletClient.account) {
+      throw new Error('No account attached to wallet client');
+    }
+
     try {
       this.logInfo('initializing_smart_account_client');
-
-      // Ensure wallet has account and it's a local account
-      if (!this.walletClient.account) {
-        throw new Error('No account attached to wallet client');
-      }
 
       // Create Kernel account following SBC documentation
       this.logInfo('creating_kernel_account');
@@ -222,16 +203,15 @@ export class SbcAppKit {
           address: entryPoint07Address,
           version: "0.7",
         },
-        version: "0.3.1" // Using latest Kernel version as per SBC docs
+        version: "0.3.1"
       });
 
-      // Create paymaster client
+      // Create paymaster and smart account clients
       this.logInfo('creating_paymaster_client', { aaProxyUrl: this.aaProxyUrl });
       const paymaster = createPaymasterClient({
         transport: http(this.aaProxyUrl),
       });
 
-      // Create smart account client with SBC's bundler and paymaster following the pattern
       this.logInfo('creating_smart_account_client');
       this.smartAccountClient = createSmartAccountClient({
         account: kernelAccount,
@@ -243,7 +223,7 @@ export class SbcAppKit {
             const gasPrice = await this.publicClient.getGasPrice();
             return {
               maxFeePerGas: gasPrice,
-              maxPriorityFeePerGas: gasPrice * BigInt(2),
+              maxPriorityFeePerGas: gasPrice * 2n,
             };
           },
         },
@@ -314,12 +294,7 @@ export class SbcAppKit {
     }
 
     // Validate chain is supported
-    const supportedChains: Chain[] = [base, baseSepolia];
-    const supportedChainIds = supportedChains.map(chain => chain.id);
-    if (!supportedChainIds.includes(config.chain.id)) {
-      const supportedNames = supportedChains.map(chain => chain.name).join(', ');
-      throw new Error(`Unsupported chain: ${config.chain.name}. Supported chains: ${supportedNames}`);
-    }
+    getChainConfig(config.chain);
   }
 
   /**
@@ -370,40 +345,42 @@ export class SbcAppKit {
       this.logInfo('getting_account_info');
       
       const smartAccountClient = await this.initializeSmartAccountClient();
+      const { account } = smartAccountClient;
       
-      if (!smartAccountClient.account) {
+      if (!account) {
         throw new Error('Smart account not initialized');
       }
       
-      const address = smartAccountClient.account.address;
+      const { address } = account;
       this.logInfo('smart_account_address', { address });
       
-      // Check if account is deployed by looking at bytecode
-      const bytecode = await this.publicClient.getBytecode({ address });
+      // Parallel execution for better performance
+      const [bytecode, balance] = await Promise.all([
+        this.publicClient.getBytecode({ address }),
+        this.publicClient.getBalance({ address })
+      ]);
+
       const isDeployed = !!bytecode && bytecode !== '0x';
       this.logInfo('account_deployment_status', { isDeployed, bytecodeLength: bytecode?.length });
       
-      // Get nonce using standard ERC-4337 method
+      // Get nonce only if deployed to avoid unnecessary calls
       let nonce = 0;
       if (isDeployed) {
         try {
-          const nonceResult = await smartAccountClient.account.getNonce();
-          nonce = Number(nonceResult);
+          nonce = Number(await account.getNonce());
           this.logInfo('account_nonce_retrieved', { nonce });
         } catch (error) {
           this.logInfo('failed_to_get_nonce_defaulting_to_0', { error: formatError(error) });
         }
       }
 
-      // Get account balance
-      const balance = await this.publicClient.getBalance({ address });
       this.logInfo('account_balance_retrieved', { balance: balance.toString() });
 
       const result = {
         address,
         isDeployed,
         nonce,
-        balance: balance.toString() // Balance in wei
+        balance: balance.toString()
       };
       
       this.logInfo('account_info_retrieved', result);
@@ -414,6 +391,23 @@ export class SbcAppKit {
       this.logError('failed_to_get_account_info', { error: message });
       throw new Error(`Failed to get account info: ${message}`);
     }
+  }
+
+  /**
+   * Calculate total gas cost with buffer
+   */
+  private calculateGasCost(gasEstimate: any, gasPrice: bigint): { totalGasUsed: bigint; totalGasCost: bigint } {
+    const totalGasUsed = 
+      gasEstimate.preVerificationGas + 
+      gasEstimate.verificationGasLimit + 
+      gasEstimate.callGasLimit + 
+      (gasEstimate.paymasterVerificationGasLimit || 0n) + 
+      (gasEstimate.paymasterPostOpGasLimit || 0n);
+
+    // Add 10% buffer for gas cost estimation
+    const totalGasCost = (totalGasUsed * gasPrice * 110n) / 100n;
+    
+    return { totalGasUsed, totalGasCost };
   }
 
   /**
@@ -432,10 +426,6 @@ export class SbcAppKit {
       // Convert params to calls array and validate
       const calls = this.normalizeToCalls(params);
       this.logInfo('prepared_calls_for_estimation', { callsCount: calls.length });
-      
-      if (calls.length === 0) {
-        throw new Error('No calls to estimate');
-      }
 
       // First prepare the user operation to get the proper structure with all required fields
       this.logInfo('preparing_user_operation_for_estimation');
@@ -456,7 +446,6 @@ export class SbcAppKit {
       const gasEstimate = await smartAccountClient.estimateUserOperationGas({
         account: smartAccountClient.account,
         calls,
-        // Include the prepared fields that might be needed
         maxFeePerGas: preparedUserOp.maxFeePerGas,
         maxPriorityFeePerGas: preparedUserOp.maxPriorityFeePerGas,
       });
@@ -469,29 +458,16 @@ export class SbcAppKit {
         paymasterPostOpGasLimit: gasEstimate.paymasterPostOpGasLimit?.toString()
       });
 
-      // Log the account balance to help debug AA21 errors
+      // Get account balance and calculate gas costs
       const accountBalance = await this.publicClient.getBalance({ 
         address: smartAccountClient.account.address 
       });
+      const { totalGasUsed, totalGasCost } = this.calculateGasCost(gasEstimate, preparedUserOp.maxFeePerGas);
+
       this.logInfo('account_balance_during_estimation', { 
         balance: accountBalance.toString(),
         balanceInEth: (Number(accountBalance) / 1e18).toFixed(6)
       });
-
-      // Use the gas prices from the prepared user operation
-      const gasPrice = preparedUserOp.maxFeePerGas;
-
-      // Calculate total expected gas used (including paymaster gas)
-      const totalGasUsed = 
-        gasEstimate.preVerificationGas + 
-        gasEstimate.verificationGasLimit + 
-        gasEstimate.callGasLimit + 
-        (gasEstimate.paymasterVerificationGasLimit || 0n) + 
-        (gasEstimate.paymasterPostOpGasLimit || 0n);
-
-      // Add 10% buffer for gas cost estimation
-      const feeBuffer = 10n;
-      const totalGasCost = (totalGasUsed * gasPrice * (100n + feeBuffer)) / 100n;
       
       const estimateResult = {
         preVerificationGas: gasEstimate.preVerificationGas.toString(),
@@ -508,7 +484,7 @@ export class SbcAppKit {
       this.logInfo('gas_estimation_completed', { 
         totalGasUsed: estimateResult.totalGasUsed, 
         totalGasCost: estimateResult.totalGasCost,
-        gasPrice: gasPrice.toString(),
+        gasPrice: preparedUserOp.maxFeePerGas.toString(),
         paymasterWillCoverCosts: !!(gasEstimate.paymasterVerificationGasLimit || gasEstimate.paymasterPostOpGasLimit)
       });
       

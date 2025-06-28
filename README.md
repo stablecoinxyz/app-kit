@@ -65,7 +65,6 @@ interface SbcAppKitConfig {
   chain: Chain;                      // viem Chain object
   privateKey?: string;               // Optional: Custom private key (default: auto-generated)
   rpcUrl?: string;                   // Optional: Custom RPC URL (default: chain's default RPC)
-  paymasterUrl?: string;             // Optional: Custom paymaster URL (default: SBC's paymaster)
   debug?: boolean;                   // Optional: Enable debug logging (default: false)
   logging?: LoggingConfig;           // Optional: Production logging configuration (default: disabled)
 }

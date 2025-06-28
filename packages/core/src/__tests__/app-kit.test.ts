@@ -428,16 +428,5 @@ describe('SbcAppKit', () => {
       const kit = new SbcAppKit(config);
       expect(kit).toBeInstanceOf(SbcAppKit);
     });
-
-    it('should handle custom paymaster URL', () => {
-      const config: SbcAppKitConfig = {
-        apiKey: 'sbc-test123456',
-        chain: base,
-        paymasterUrl: 'https://custom.paymaster.com'
-      };
-
-      const kit = new SbcAppKit(config);
-      expect(kit).toBeInstanceOf(SbcAppKit);
-    });
   });
 }); 

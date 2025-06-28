@@ -2,15 +2,7 @@ import { createPublicClient, createWalletClient, http, decodeAbiParameters, Hex,
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 import { CHAIN_CONFIGS, SBC_API_KEY_PREFIX } from './constants';
-import { ChainConfig } from './types';
-
-// Static mapping from chain ID to viem export variable name
-// This ensures we use the exact same identifier as in viem/chains exports
-const CHAIN_ID_TO_IDENTIFIER = {
-  [base.id]: 'base',           // 8453
-  [baseSepolia.id]: 'baseSepolia', // 84532
-  // Add more chains as needed...
-} as const;
+import { ChainConfig, AaProxyConfig } from './types';
 
 /**
  * Get chain configuration for a supported chain
@@ -18,7 +10,8 @@ const CHAIN_ID_TO_IDENTIFIER = {
 export function getChainConfig(chain: Chain): ChainConfig {
   const config = CHAIN_CONFIGS.get(chain.id);
   if (!config) {
-    throw new Error(`Unsupported chain: ${chain.name}`);
+    const supportedChains = Array.from(CHAIN_CONFIGS.values()).map(c => c.name).join(', ');
+    throw new Error(`Unsupported chain: ${chain.name}. Supported chains: ${supportedChains}`);
   }
   return config;
 }
@@ -66,24 +59,17 @@ export function validateApiKey(apiKey: string): boolean {
 /**
  * Build the AA proxy URL for API calls
  */
-export function buildAaProxyUrl(
-  chain: Chain, 
-  apiKey: string, 
-  staging?: boolean,
-  customUrl?: string
-): string {
-  const config = getChainConfig(chain);
-  const baseUrl = customUrl || config.aaProxyUrl;
-  const stagingParam = staging ? '?staging=true' : '';
+export function buildAaProxyUrl(config: AaProxyConfig): string {
+  const chainConfig = getChainConfig(config.chain);
   
-  // Use static mapping for reliable chain identifier matching viem export names
-  const chainIdentifier = CHAIN_ID_TO_IDENTIFIER[chain.id as keyof typeof CHAIN_ID_TO_IDENTIFIER];
+  // Use URL constructor for safer URL building
+  const url = new URL(`/rpc/v1/${chainConfig.idString}/${config.apiKey}`, chainConfig.aaProxyUrl);
   
-  if (!chainIdentifier) {
-    throw new Error(`Chain identifier not found for chain ${chain.name} (ID: ${chain.id}). Please add it to CHAIN_ID_TO_IDENTIFIER mapping.`);
+  if (config.staging) {
+    url.searchParams.set('staging', 'true');
   }
   
-  return `${baseUrl}/rpc/v1/${chainIdentifier}/${apiKey}${stagingParam}`;
+  return url.toString();
 }
 
 /**
