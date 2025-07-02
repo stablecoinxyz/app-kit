@@ -417,7 +417,7 @@ function Dashboard() {
     
   //   const deadline = Math.floor(Date.now() / 1000) + PERMIT_DURATION_SECONDS;
   //   const { sig } = await createPermitSignature(TRANSFER_AMOUNT, deadline);
-  //   const ownerAddress = sbcKit!.getOwnerAddress();
+  //   const ownerAddress = sbcAppKit!.getOwnerAddress();
   //   const smartAccountAddress = account!.address;
 
   //   const permitData = createPermitCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT, deadline, sig);
@@ -434,7 +434,7 @@ function Dashboard() {
   // };
 
   // const handleEstimateGas = async () => {
-  //   if (!sbcKit) return;
+  //   if (!sbcAppKit) return;
 
   //   setIsEstimating(true);
   //   setEstimationError(null);

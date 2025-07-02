@@ -93,7 +93,7 @@ The app demonstrates the two main hooks:
 
 ```tsx
 const { 
-  sbcKit,           // SBC SDK instance
+  sbcAppKit,           // SBC SDK instance
   isInitialized,    // Whether SDK is ready
   error,            // Initialization error
   account,          // Smart account info

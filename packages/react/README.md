@@ -131,7 +131,7 @@ Main hook for accessing SBC functionality and account information.
 
 ```tsx
 const {
-  sbcKit,           // SBC SDK instance
+  sbcAppKit,           // SBC SDK instance
   isInitialized,    // Whether SDK is ready
   error,            // Initialization error
   reinitialize,     // Re-initialize SDK

@@ -37,7 +37,7 @@ export function SbcProvider({ config, children, onError }: SbcProviderProps) {
     return () => {
       if (sbcAppKit) {
         // If we add cleanup methods to core SDK later
-        // sbcKit.destroy?.();
+        // sbcAppKit.destroy?.();
       }
     };
   }, [sbcAppKit]);
