@@ -12,13 +12,11 @@ export interface SbcProviderProps {
 
 export interface SbcContextValue {
   /** SBC App Kit instance */
-  sbcKit: SbcAppKit | null;
+  sbcAppKit: SbcAppKit | null;
   /** Whether the SDK is initialized */
   isInitialized: boolean;
   /** Initialization error if any */
   error: Error | null;
-  /** Re-initialize the SDK */
-  reinitialize: () => void;
 }
 
 export interface UseUserOperationOptions {

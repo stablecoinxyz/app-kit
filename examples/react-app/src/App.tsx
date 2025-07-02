@@ -89,7 +89,7 @@ const ERC20_ABI = {
 
 function Dashboard() {
   const { 
-    sbcKit, 
+    sbcAppKit, 
     isInitialized, 
     error, 
     account, 
@@ -135,10 +135,10 @@ function Dashboard() {
 
   // Function to fetch balances for a specific address
   const fetchBalancesForAddress = useCallback(async (address: string): Promise<{eth: string, sbc: string}> => {
-    if (!sbcKit) return {eth: '0', sbc: '0'};
+    if (!sbcAppKit) return {eth: '0', sbc: '0'};
 
     try {
-      const publicClient = (sbcKit as any).publicClient;
+      const publicClient = (sbcAppKit as any).publicClient;
       
       // Fetch ETH and SBC balances in parallel
       const [ethBalance, sbcBalance] = await Promise.all([
@@ -159,7 +159,7 @@ function Dashboard() {
       console.error(`Failed to fetch balances for ${address}:`, error);
       return {eth: '0', sbc: '0'};
     }
-  }, [sbcKit]);
+  }, [sbcAppKit]);
 
   // Helper function to format SBC balance
   const formatSbcBalance = (balance: string | null): string => {
@@ -175,18 +175,18 @@ function Dashboard() {
 
   // Helper function to get explorer URL for transaction hash
   const getExplorerUrl = (txHash: string): string => {
-    if (!sbcKit) throw new Error('SBC AppKit not initialized');
-    const chainConfig = sbcKit.getChainConfig();
+    if (!sbcAppKit) throw new Error('SBC AppKit not initialized');
+    const chainConfig = sbcAppKit.getChainConfig();
     return `${chainConfig.blockExplorerUrl}/tx/${txHash}`;
   };
 
   // Function to fetch all balances
   const fetchAllBalances = useCallback(async () => {
-    if (!sbcKit || !account?.address) return;
+    if (!sbcAppKit || !account?.address) return;
 
     setIsLoadingBalances(true);
     try {
-      const ownerAddress = sbcKit.getOwnerAddress();
+      const ownerAddress = sbcAppKit.getOwnerAddress();
       
       // Fetch balances for both addresses in parallel
       const [ownerBals, smartAccountBals] = await Promise.all([
@@ -203,22 +203,22 @@ function Dashboard() {
     } finally {
       setIsLoadingBalances(false);
     }
-  }, [sbcKit, account?.address, fetchBalancesForAddress]);
+  }, [sbcAppKit, account?.address, fetchBalancesForAddress]);
 
   // Fetch balances when account changes
   useEffect(() => {
-    if (account?.address && sbcKit) {
+    if (account?.address && sbcAppKit) {
       fetchAllBalances();
     }
-  }, [account?.address, sbcKit, fetchAllBalances]);
+  }, [account?.address, sbcAppKit, fetchAllBalances]);
 
   // Helper function to create permit signature for EIP-2612
   const createPermitSignature = async (amount: bigint, deadline: number) => {
-    if (!sbcKit || !account?.address) throw new Error('SBC App Kit not initialized');
+    if (!sbcAppKit || !account?.address) throw new Error('SBC App Kit not initialized');
 
-    const ownerAddress = sbcKit.getOwnerAddress();
+    const ownerAddress = sbcAppKit.getOwnerAddress();
     const smartAccountAddress = account.address;
-    const publicClient = (sbcKit as any).publicClient;
+    const publicClient = (sbcAppKit as any).publicClient;
 
     // Fetch required contract data in parallel
     const [nonce, tokenName] = await Promise.all([
@@ -265,7 +265,7 @@ function Dashboard() {
     };
 
     // Sign the EIP-712 typed data
-    const walletClient = (sbcKit as any).walletClient;
+    const walletClient = (sbcAppKit as any).walletClient;
     const signature = await walletClient.signTypedData({
       domain,
       types,
@@ -349,7 +349,7 @@ function Dashboard() {
     
     const deadline = Math.floor(Date.now() / 1000) + PERMIT_DURATION_SECONDS;
     const { sig } = await createPermitSignature(TRANSFER_AMOUNT, deadline);
-    const ownerAddress = sbcKit!.getOwnerAddress();
+    const ownerAddress = sbcAppKit!.getOwnerAddress();
     const smartAccountAddress = account!.address;
 
     const permitData = createPermitCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT, deadline, sig);
@@ -366,7 +366,7 @@ function Dashboard() {
   };
 
   const handleSendTransaction = async () => {
-    if (!sbcKit || !targetAddress || addressError) return;
+    if (!sbcAppKit || !targetAddress || addressError) return;
 
     try {
       // Get current balances
@@ -514,7 +514,7 @@ function Dashboard() {
             {/* Owner Section */}
             <div style={{marginBottom: '20px', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px'}}>
               <h4 style={{margin: '0 0 8px 0'}}>👤 Owner (EOA)</h4>
-              <p style={{margin: '4px 0'}}><strong>Address:</strong> {sbcKit?.getOwnerAddress()}</p>
+              <p style={{margin: '4px 0'}}><strong>Address:</strong> {sbcAppKit?.getOwnerAddress()}</p>
               <p style={{margin: '4px 0'}}><strong>ETH Balance:</strong> {
                 isLoadingBalances ? 'Loading...' : formatEthBalance(ownerBalances.eth)
               } ETH</p>

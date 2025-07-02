@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { SbcAppKit } from '@stablecoin.xyz/core';
 import type { SbcProviderProps, SbcContextValue } from '../types';
 
 const SbcContext = createContext<SbcContextValue | undefined>(undefined);
 
 export function SbcProvider({ config, children, onError }: SbcProviderProps) {
-  const [sbcKit, setSbcKit] = useState<SbcAppKit | null>(null);
+  const [sbcAppKit, setSbcAppKit] = useState<SbcAppKit | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -14,22 +14,18 @@ export function SbcProvider({ config, children, onError }: SbcProviderProps) {
       setError(null);
       setIsInitialized(false);
       
-      const kit = new SbcAppKit(config);
+      const appKit = new SbcAppKit(config);
       
-      setSbcKit(kit);
+      setSbcAppKit(appKit);
       setIsInitialized(true);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to initialize SBC App Kit');
       setError(error);
-      setSbcKit(null);
+      setSbcAppKit(null);
       setIsInitialized(false);
       onError?.(error);
     }
   }, [config, onError]);
-
-  const reinitialize = useCallback(() => {
-    initialize();
-  }, [initialize]);
 
   // Initialize on mount and config changes
   useEffect(() => {
@@ -39,18 +35,17 @@ export function SbcProvider({ config, children, onError }: SbcProviderProps) {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (sbcKit) {
+      if (sbcAppKit) {
         // If we add cleanup methods to core SDK later
         // sbcKit.destroy?.();
       }
     };
-  }, [sbcKit]);
+  }, [sbcAppKit]);
 
   const contextValue: SbcContextValue = {
-    sbcKit,
+    sbcAppKit,
     isInitialized,
     error,
-    reinitialize,
   };
 
   return (

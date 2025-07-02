@@ -70,13 +70,90 @@ interface SbcAppKitConfig {
 }
 ```
 
-### Methods
+## 📚 API Reference
 
-- `sendUserOperation(params)` - Send gasless transaction
-- `estimateUserOperation(params)` - Estimate gas costs
-- `getAccount()` - Get smart account info
-- `getOwnerAddress()` - Get EOA address
-- `getChain()` - Get current chain
+### Core SDK (@stablecoin.xyz/core)
+
+#### SbcAppKit Class
+
+```typescript
+class SbcAppKit {
+  constructor(config: SbcAppKitConfig)
+  
+  // Transaction Methods
+  sendUserOperation(params: SendUserOperationParams): Promise<UserOperationResult>
+  estimateUserOperation(params: UserOperationParams): Promise<UserOperationEstimate>
+  
+  // Account Methods
+  getAccount(): Promise<AccountInfo>
+  getOwnerAddress(): string
+  
+  // Chain & Configuration
+  getChain(): Chain
+  getChainConfig(): ChainConfig
+}
+```
+
+#### Key Types
+
+```typescript
+interface SendUserOperationParams {
+  to: string;                          // Target contract address
+  data?: string;                       // Encoded transaction data (default: '0x')
+  value?: string;                      // ETH value to send (default: '0')
+}
+
+interface UserOperationResult {
+  transactionHash: string;             // Final transaction hash
+  userOperationHash: string;           // User operation hash
+  receipt: TransactionReceipt;         // Transaction receipt
+}
+
+interface AccountInfo {
+  address: string;                     // Smart account address
+  deploymentTransaction?: string;      // Deployment tx (if newly created)
+}
+```
+
+### React SDK (@stablecoin.xyz/react)
+
+#### Hooks
+
+```typescript
+// Main hook for SBC App Kit functionality
+function useSbcApp(): {
+  sbcAppKit: SbcAppKit | null;           // SDK instance
+  isInitialized: boolean;             // Whether SDK is ready
+  error: Error | null;                // Initialization error
+  account: AccountInfo | null;        // Smart account info
+  isLoadingAccount: boolean;          // Account loading state
+  accountError: Error | null;         // Account loading error
+  refreshAccount: () => Promise<void>; // Refresh account data
+}
+
+// Hook for sending transactions
+function useUserOperation(options?): {
+  sendUserOperation: (params: SendUserOperationParams) => Promise<void>;
+  isLoading: boolean;                 // Transaction in progress
+  isSuccess: boolean;                 // Transaction succeeded
+  isError: boolean;                   // Transaction failed
+  error: Error | null;                // Transaction error
+  data: UserOperationResult | null;   // Transaction result
+  reset: () => void;                  // Reset hook state
+}
+```
+
+#### Components
+
+```typescript
+// Provider component for React app
+<SbcProvider config={SbcAppKitConfig}>
+  {children}
+</SbcProvider>
+
+// Optional wallet connection UI
+<WalletConnect />
+```
 
 ### Supported Chains
 

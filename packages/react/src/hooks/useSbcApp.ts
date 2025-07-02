@@ -1,16 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSbcContext } from '../components/SbcProvider';
 import type { AccountInfo } from '@stablecoin.xyz/core';
 
 export interface UseSbcAppReturn {
   /** SBC App Kit instance */
-  sbcKit: import('@stablecoin.xyz/core').SbcAppKit | null;
+  sbcAppKit: import('@stablecoin.xyz/core').SbcAppKit | null;
   /** Whether the SDK is initialized */
   isInitialized: boolean;
   /** Initialization error if any */
   error: Error | null;
-  /** Re-initialize the SDK */
-  reinitialize: () => void;
   /** Account information */
   account: AccountInfo | null;
   /** Whether account info is loading */
@@ -25,13 +23,13 @@ export interface UseSbcAppReturn {
  * Main hook for accessing SBC App Kit functionality
  */
 export function useSbcApp(): UseSbcAppReturn {
-  const { sbcKit, isInitialized, error, reinitialize } = useSbcContext();
+  const { sbcAppKit, isInitialized, error } = useSbcContext();
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(false);
   const [accountError, setAccountError] = useState<Error | null>(null);
 
-  const refreshAccount = async () => {
-    if (!sbcKit || !isInitialized) {
+  const refreshAccount = useCallback(async () => {
+    if (!sbcAppKit || !isInitialized) {
       setAccount(null);
       return;
     }
@@ -39,7 +37,7 @@ export function useSbcApp(): UseSbcAppReturn {
     try {
       setIsLoadingAccount(true);
       setAccountError(null);
-      const accountInfo = await sbcKit.getAccount();
+      const accountInfo = await sbcAppKit.getAccount();
       setAccount(accountInfo);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to load account');
@@ -48,23 +46,22 @@ export function useSbcApp(): UseSbcAppReturn {
     } finally {
       setIsLoadingAccount(false);
     }
-  };
+  }, [sbcAppKit, isInitialized]);
 
   // Load account when SDK is initialized
   useEffect(() => {
-    if (isInitialized && sbcKit) {
+    if (isInitialized && sbcAppKit) {
       refreshAccount();
     } else {
       setAccount(null);
       setAccountError(null);
     }
-  }, [isInitialized, sbcKit]);
+  }, [isInitialized, sbcAppKit, refreshAccount]);
 
   return {
-    sbcKit,
+    sbcAppKit,
     isInitialized,
     error,
-    reinitialize,
     account,
     isLoadingAccount,
     accountError,

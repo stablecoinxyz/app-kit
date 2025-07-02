@@ -19,7 +19,7 @@ export interface UseUserOperationReturn extends UserOperationState {
  * Hook for sending user operations with automatic state management
  */
 export function useUserOperation(options: UseUserOperationOptions = {}): UseUserOperationReturn {
-  const { sbcKit, isInitialized } = useSbcContext();
+  const { sbcAppKit, isInitialized } = useSbcContext();
   const { refreshAccount } = useSbcApp();
   const { onSuccess, onError, refreshAccount: shouldRefreshAccount = true } = options;
 
@@ -38,7 +38,7 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
   }, []);
 
   const sendUserOperation = useCallback(async (params: SendUserOperationParams): Promise<UserOperationResult | undefined> => {
-    if (!sbcKit || !isInitialized) {
+    if (!sbcAppKit || !isInitialized) {
       const error = new Error('SBC App Kit is not initialized');
       setError(error);
       setIsError(true);
@@ -52,7 +52,7 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
       setError(null);
       setIsSuccess(false);
 
-      const result = await sbcKit.sendUserOperation(params);
+      const result = await sbcAppKit.sendUserOperation(params);
       
       setData(result);
       setIsSuccess(true);
@@ -74,10 +74,10 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
     } finally {
       setIsLoading(false);
     }
-  }, [sbcKit, isInitialized, onSuccess, onError, shouldRefreshAccount, refreshAccount]);
+  }, [sbcAppKit, isInitialized, onSuccess, onError, shouldRefreshAccount, refreshAccount]);
 
   const estimateUserOperation = useCallback(async (params: SendUserOperationParams): Promise<UserOperationEstimate | undefined> => {
-    if (!sbcKit || !isInitialized) {
+    if (!sbcAppKit || !isInitialized) {
       const error = new Error('SBC App Kit is not initialized');
       setError(error);
       setIsError(true);
@@ -86,7 +86,7 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
     }
 
     try {
-      return await sbcKit.estimateUserOperation(params);
+      return await sbcAppKit.estimateUserOperation(params);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to estimate user operation');
       setError(error);
@@ -94,7 +94,7 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
       onError?.(error);
       return;
     }
-  }, [sbcKit, isInitialized, onError]);
+  }, [sbcAppKit, isInitialized, onError]);
 
   return {
     sendUserOperation,
