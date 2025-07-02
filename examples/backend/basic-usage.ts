@@ -1,5 +1,5 @@
 /**
- * SBC Kit Basic Usage Example with Pluggable Logging
+ * SBC Kit Basic Usage Example
  * 
  * Setup:
  * 1. Copy .env.example to .env
@@ -35,7 +35,7 @@ async function main() {
       appName: 'my-dapp-backend',
       environment,
       version: '1.0.0',
-      userId: process.env.USER_ID || 'unknown',
+      userId: 'unknown',
       sessionId: `session_${Date.now()}`
     },
     includeSensitive: false,
@@ -64,6 +64,8 @@ async function main() {
   
   // ERC-20 transfer example  
   await sendERC20Transfer(sbcApp);
+
+  console.log('🎉 Done!');
 }
 
 async function sendSimpleTransaction(sbcApp: SbcAppKit) {
@@ -99,7 +101,7 @@ async function sendERC20Transfer(sbcApp: SbcAppKit) {
     functionName: 'transfer',
     args: [
       '0x4a9f2769438FEAA328C28404Dd29d1917589FC45',
-      BigInt('1000000') // 1 SBC (6 decimals)
+      10000n // 0.01 SBC (6 decimals)
     ]
   });
 
