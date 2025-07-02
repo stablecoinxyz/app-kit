@@ -1,5 +1,37 @@
 # @stablecoin.xyz/core
 
+## 1.0.1
+
+### Patch Changes
+
+- 4a9954e: Add dotenv support to backend examples for better environment variable management
+
+  - Added dotenv dependency to backend example package
+  - Updated basic-usage.ts to load environment variables from .env file
+  - Enhanced README with .env setup instructions and environment variable documentation
+  - Provided both .env file and export variable setup options
+  - Improved developer experience for local development and configuration
+
+- 97fcf21: Add comprehensive API documentation with detailed method signatures and examples
+
+  - Added complete API reference section to main README
+  - Documented all SbcAppKit class methods with TypeScript signatures
+  - Included detailed interface definitions for key types
+  - Added React hooks documentation with full return type details
+  - Provided component usage examples for SbcProvider and WalletConnect
+  - Enhanced developer experience with clear, searchable API documentation
+
+- 53c996e: Fix all test failures and improve test coverage to 100% passing
+
+  - Fixed missing `getBalance` mock in `createPublicClient` for account operations tests
+  - Updated gas estimation test expectations to match paymaster gas limit calculations
+  - Removed outdated `core.test.ts` and `integration.test.ts` that tested non-existent API implementation
+  - Fixed Jest configuration for React package ES module compatibility
+  - Added placeholder test for React package to ensure Jest runs properly
+  - All 41 tests now passing: 39 core tests + 2 React tests
+  - Comprehensive test coverage for current permissionless-based implementation
+  - Eliminated test suite maintenance overhead for deprecated functionality
+
 ## 1.0.0
 
 ### Major Changes

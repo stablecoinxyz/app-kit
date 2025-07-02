@@ -1,5 +1,41 @@
 # @stablecoin.xyz/react
 
+## 0.2.1
+
+### Patch Changes
+
+- 97fcf21: Add comprehensive API documentation with detailed method signatures and examples
+
+  - Added complete API reference section to main README
+  - Documented all SbcAppKit class methods with TypeScript signatures
+  - Included detailed interface definitions for key types
+  - Added React hooks documentation with full return type details
+  - Provided component usage examples for SbcProvider and WalletConnect
+  - Enhanced developer experience with clear, searchable API documentation
+
+- 53c996e: Fix all test failures and improve test coverage to 100% passing
+
+  - Fixed missing `getBalance` mock in `createPublicClient` for account operations tests
+  - Updated gas estimation test expectations to match paymaster gas limit calculations
+  - Removed outdated `core.test.ts` and `integration.test.ts` that tested non-existent API implementation
+  - Fixed Jest configuration for React package ES module compatibility
+  - Added placeholder test for React package to ensure Jest runs properly
+  - All 41 tests now passing: 39 core tests + 2 React tests
+  - Comprehensive test coverage for current permissionless-based implementation
+  - Eliminated test suite maintenance overhead for deprecated functionality
+
+- 97fcf21: Remove manual retry functionality from React hooks to simplify interface and improve usability
+
+  - Removed `reinitialize` method from `SbcContextValue` interface and `useSbcApp` hook
+  - Fixed naming consistency: `sbcKit` → `sbcAppKit` throughout React package
+  - Simplified React hook interface to focus on core functionality
+  - Maintains clean, intuitive API for developers
+
+- Updated dependencies [4a9954e]
+- Updated dependencies [97fcf21]
+- Updated dependencies [53c996e]
+  - @stablecoin.xyz/core@1.0.1
+
 ## 0.2.0
 
 ### Minor Changes

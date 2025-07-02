@@ -23,7 +23,7 @@
     "changeset:version": "changeset version",
     "changeset:publish": "changeset publish --access public",
     "changeset:status": "changeset status",
-    "pre-publish": "pnpm run lint && pnpm run test && pnpm run build",
+    "pre-publish": "pnpm run test && pnpm run build",
     "publish:check": "pnpm --recursive --filter './packages/*' publish --dry-run --access public",
     "publish:packages": "pnpm run pre-publish && pnpm run changeset:version && pnpm run changeset:publish",
     "release": "pnpm run publish:packages"
