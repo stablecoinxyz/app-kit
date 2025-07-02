@@ -9,6 +9,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
@@ -31,7 +34,7 @@
   "author": "Stable Coin Inc.",
   "license": "MIT",
   "dependencies": {
-    "@stablecoin.xyz/core": "^1.0.0"
+    "@stablecoin.xyz/core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0",
