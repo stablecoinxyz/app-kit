@@ -23,65 +23,6 @@ export function createConsoleLogger(structured = true) {
 }
 
 /**
- * BetterStack logger adapter
- * Install separately: npm install @sbc/logging-betterstack
- */
-export function createBetterStackLogger(sourceToken: string, endpoint = 'https://in.logs.betterstack.com/') {
-  return async (level: string, message: string, metadata: Record<string, any>) => {
-    const logEntry = {
-      level,
-      message,
-      timestamp: new Date().toISOString(),
-      ...metadata
-    };
-    
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${sourceToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(logEntry)
-      });
-      
-      if (!response.ok) {
-        console.warn(`BetterStack logging failed: ${response.status} ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Failed to send log to BetterStack:', error);
-      // Fallback to console
-      console.log('FALLBACK_LOG:', JSON.stringify(logEntry));
-    }
-  };
-}
-
-/**
- * Datadog logger adapter  
- * Install separately: npm install @sbc/logging-datadog
- */
-export function createDatadogLogger(apiKey: string, service = 'sbc-app-kit') {
-  return (level: string, message: string, metadata: Record<string, any>) => {
-    // In real implementation, you'd use dd-trace
-    const logEntry = {
-      status: level,
-      message,
-      service,
-      ddsource: 'nodejs',
-      ddtags: `chain:${metadata.chainName},env:${metadata.environment}`,
-      timestamp: new Date().toISOString(),
-      ...metadata
-    };
-    
-    console.log('DATADOG:', JSON.stringify(logEntry));
-    
-    // Real implementation:
-    // const { logger } = require('dd-trace');
-    // logger[level](message, metadata);
-  };
-}
-
-/**
  * Generic HTTP logger for any endpoint
  */
 export function createHttpLogger(endpoint: string, headers: Record<string, string> = {}) {

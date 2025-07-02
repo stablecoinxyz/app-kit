@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSbcContext } from '../components/SbcProvider';
 import type { AccountInfo } from '@sbc/core';
 
-export interface UseSbcKitReturn {
+export interface UseSbcAppReturn {
   /** SBC App Kit instance */
   sbcKit: import('@sbc/core').SbcAppKit | null;
   /** Whether the SDK is initialized */
@@ -24,7 +24,7 @@ export interface UseSbcKitReturn {
 /**
  * Main hook for accessing SBC App Kit functionality
  */
-export function useSbcKit(): UseSbcKitReturn {
+export function useSbcApp(): UseSbcAppReturn {
   const { sbcKit, isInitialized, error, reinitialize } = useSbcContext();
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(false);

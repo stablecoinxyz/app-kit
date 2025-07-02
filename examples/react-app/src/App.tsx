@@ -1,7 +1,7 @@
 import { baseSepolia } from 'viem/chains';
 import { 
   SbcProvider, 
-  useSbcKit, 
+  useSbcApp, 
   useUserOperation,
   type SbcAppKitConfig
 } from '@sbc/react';
@@ -96,7 +96,7 @@ function Dashboard() {
     isLoadingAccount, 
     accountError,
     refreshAccount 
-  } = useSbcKit();
+  } = useSbcApp();
 
   const { 
     sendUserOperation, 

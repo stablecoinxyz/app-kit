@@ -51,7 +51,7 @@ function App() {
 
 ```tsx
 import React from 'react';
-import { useSbcKit, useUserOperation } from '@sbc/react';
+import { useSbcApp, useUserOperation } from '@sbc/react';
 
 function Dashboard() {
   const { 
@@ -59,7 +59,7 @@ function Dashboard() {
     isInitialized, 
     error,
     refreshAccount 
-  } = useSbcKit();
+  } = useSbcApp();
 
   const { 
     sendUserOperation, 
@@ -125,7 +125,7 @@ interface SbcProviderProps {
 
 ### Hooks
 
-#### `useSbcKit()`
+#### `useSbcApp()`
 
 Main hook for accessing SBC functionality and account information.
 
@@ -139,7 +139,7 @@ const {
   isLoadingAccount, // Loading account state
   accountError,     // Account loading error
   refreshAccount    // Refresh account info
-} = useSbcKit();
+} = useSbcApp();
 ```
 
 #### `useUserOperation(options?)`
@@ -169,7 +169,7 @@ const {
 
 ```tsx
 await sendUserOperation({
-  to: '0x742d35Cc6635C0532925a3b8c17f21c5F8E63231',
+  to: '0x742d35Cc6635C0532925a3b8c17f21c5F8E63231', // Target contract address
   data: '0x', // Encoded function call
   value: '1000000000000000' // Wei amount (optional)
 });
@@ -244,35 +244,9 @@ REACT_APP_SBC_API_KEY=your_api_key_here
 # Optional
 REACT_APP_SBC_DEBUG=true
 ```
-
-### Logging Setup
-
-```tsx
-import { createBetterStackLogger } from '@sbc/core';
-
-const config: SbcAppKitConfig = {
-  apiKey: process.env.REACT_APP_SBC_API_KEY!,
-  chain: base,
-  logging: {
-    enabled: true,
-    level: 'info',
-    logger: createBetterStackLogger(process.env.REACT_APP_BETTERSTACK_TOKEN!),
-    context: {
-      appName: 'my-dapp',
-      environment: 'production',
-      version: '1.0.0'
-    },
-    includeSensitive: false,
-    samplingRate: 0.1
-  }
-};
-```
-
 ## Examples
 
 - [Complete React App](../../examples/react-app/) - Full example with UI
-- [Next.js Integration](../../examples/nextjs-app/) - Next.js specific setup
-- [Vite Setup](../../examples/vite-app/) - Vite configuration
 
 ## License
 

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useSbcContext } from '../components/SbcProvider';
-import { useSbcKit } from './useSbcKit';
+import { useSbcApp } from './useSbcApp';
 import type { 
   SendUserOperationParams, 
   UserOperationResult,
@@ -20,7 +20,7 @@ export interface UseUserOperationReturn extends UserOperationState {
  */
 export function useUserOperation(options: UseUserOperationOptions = {}): UseUserOperationReturn {
   const { sbcKit, isInitialized } = useSbcContext();
-  const { refreshAccount } = useSbcKit();
+  const { refreshAccount } = useSbcApp();
   const { onSuccess, onError, refreshAccount: shouldRefreshAccount = true } = options;
 
   const [isLoading, setIsLoading] = useState(false);

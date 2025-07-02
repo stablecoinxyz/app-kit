@@ -1,6 +1,6 @@
 # SBC App Kit
 
-A TypeScript SDK for SBC Account Abstraction infrastructure - send gasless transactions on Base networks.
+A TypeScript SDK for SBC Account Abstraction infrastructure - send gasless transactions on Base and Base Sepolia.
 
 ## 🚀 Quick Start
 
@@ -16,14 +16,14 @@ npm install @sbc/core
 import { SbcAppKit } from '@sbc/core';
 import { baseSepolia } from 'viem/chains';
 
-const sbcKit = new SbcAppKit({
+const sbcAppKit = new SbcAppKit({
   apiKey: 'sbc-your-api-key', // Get from SBC dashboard
   chain: baseSepolia,
   privateKey: '0x...', // Optional: auto-generated if not provided
 });
 
 // Send gasless transaction
-const result = await sbcKit.sendUserOperation({
+const result = await sbcAppKit.sendUserOperation({
   to: '0x...',
   data: '0x...',
   value: '0'

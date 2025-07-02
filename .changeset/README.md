@@ -92,7 +92,7 @@ pnpm changeset
 
 Add React hooks for gasless transactions
 
-- Add useSbcKit() hook for account management
+- Add useSbcApp() hook for account management
 - Add useUserOperation() hook with loading states  
 - Fix TypeScript exports in core package
 - Update documentation with usage examples

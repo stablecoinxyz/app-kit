@@ -89,7 +89,7 @@ function App() {
 
 The app demonstrates the two main hooks:
 
-#### `useSbcKit()` - Account Management
+#### `useSbcApp()` - Account Management
 
 ```tsx
 const { 
@@ -99,7 +99,7 @@ const {
   account,          // Smart account info
   isLoadingAccount, // Loading state
   refreshAccount    // Refresh account data
-} = useSbcKit();
+} = useSbcApp();
 ```
 
 #### `useUserOperation()` - Transaction Management
