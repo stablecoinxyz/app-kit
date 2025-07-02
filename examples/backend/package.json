@@ -8,7 +8,10 @@
     "start": "tsx basic-usage.ts",
     "dev": "tsx watch basic-usage.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "@stablecoin.xyz/core": "workspace:*"
+  },
   "devDependencies": {
     "tsx": "^4.0.0"
   }

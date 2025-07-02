@@ -50,9 +50,10 @@ npm run build:core
 # Run tests
 npm test
 
-# Run example
-export SBC_API_KEY="sbc-your-key"
-npm run examples:backend
+# Run backend example
+cd examples/backend
+echo "SBC_API_KEY=sbc-your-key" > .env
+npm run start
 ```
 
 ## 📖 API Reference

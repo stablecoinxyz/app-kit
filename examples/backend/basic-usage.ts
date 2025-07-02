@@ -2,15 +2,18 @@
  * SBC Kit Basic Usage Example with Pluggable Logging
  * 
  * Setup:
- * export SBC_API_KEY="sbc-your-api-key-here"
- * export PRIVATE_KEY="0xYourPrivateKeyHere"  # Optional
- * export SBC_DEBUG="true"  # Optional - enables debug logging
- * npm run examples:backend
+ * 1. Copy .env.example to .env
+ * 2. Fill in your SBC_API_KEY and other values
+ * 3. Run: npm run start
  */
 
+import dotenv from 'dotenv';
 import { SbcAppKit, createConsoleLogger } from '../../packages/core/src/index.js';
 import { encodeFunctionData } from 'viem';
 import { baseSepolia } from 'viem/chains';
+
+// Load environment variables from .env file
+dotenv.config();
 
 async function main() {
   const apiKey = process.env.SBC_API_KEY;
