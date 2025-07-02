@@ -8,6 +8,7 @@ jest.mock('viem', () => ({
   createPublicClient: jest.fn(() => ({
     getBlockNumber: jest.fn().mockResolvedValue(123456n),
     getBytecode: jest.fn().mockResolvedValue('0x1234'),
+    getBalance: jest.fn().mockResolvedValue(BigInt('1000000000000000000')), // 1 ETH
     readContract: jest.fn(),
     getGasPrice: jest.fn().mockResolvedValue(1000000000n),
     getBlock: jest.fn().mockResolvedValue({
@@ -66,20 +67,25 @@ jest.mock('permissionless', () => ({
       }
     }),
     prepareUserOperation: jest.fn().mockResolvedValue({
+      sender: '0x9876543210987654321098765432109876543210',
+      nonce: 5n,
+      callData: '0x1234',
+      callGasLimit: 150000n,
+      verificationGasLimit: 100000n,
+      preVerificationGas: 50000n,
+      maxFeePerGas: 1000000000n,
+      maxPriorityFeePerGas: 2000000000n,
+      paymasterAndData: '0x',
+      signature: '0x',
+    }),
+    estimateUserOperationGas: jest.fn().mockResolvedValue({
       preVerificationGas: 50000n,
       verificationGasLimit: 100000n,
       callGasLimit: 150000n,
       maxFeePerGas: 1000000000n,
       maxPriorityFeePerGas: 2000000000n,
       paymasterVerificationGasLimit: 25000n,
-      paymasterPostOpGasLimit: 25000n
-    }),
-    estimateUserOperationGas: jest.fn().mockResolvedValue({
-      preVerificationGas: '50000',
-      verificationGasLimit: '100000',
-      callGasLimit: '150000',
-      maxFeePerGas: '1000000000',
-      maxPriorityFeePerGas: '2000000000',
+      paymasterPostOpGasLimit: 25000n,
     }),
   }))
 }));
@@ -186,6 +192,7 @@ describe('SbcAppKit', () => {
       createPublicClient.mockReturnValueOnce({
         getBlockNumber: jest.fn().mockResolvedValue(123456n),
         getBytecode: jest.fn().mockResolvedValue('0x'),
+        getBalance: jest.fn().mockResolvedValue(BigInt('500000000000000000')), // 0.5 ETH
         readContract: jest.fn(),
         getGasPrice: jest.fn().mockResolvedValue(1000000000n),
         getBlock: jest.fn().mockResolvedValue({
@@ -253,10 +260,10 @@ describe('SbcAppKit', () => {
         callGasLimit: '150000',
         maxFeePerGas: '1000000000',
         maxPriorityFeePerGas: '2000000000',
-        totalGasUsed: '300000', // 50000 + 100000 + 150000
-        totalGasCost: '330000000000000', // 300000 * 1000000000 * 1.1
-        paymasterVerificationGasLimit: undefined,
-        paymasterPostOpGasLimit: undefined
+        totalGasUsed: '350000', // 50000 + 100000 + 150000 + 25000 + 25000
+        totalGasCost: '385000000000000', // 350000 * 1000000000 * 1.1
+        paymasterVerificationGasLimit: '25000',
+        paymasterPostOpGasLimit: '25000'
       });
     });
 

@@ -9,7 +9,6 @@
 
 import dotenv from 'dotenv';
 import { SbcAppKit, createConsoleLogger } from '../../packages/core/src/index.js';
-import { encodeFunctionData } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
 // Load environment variables from .env file
@@ -62,9 +61,6 @@ async function main() {
   // Simple transaction example
   await sendSimpleTransaction(sbcApp);
   
-  // ERC-20 transfer example  
-  await sendERC20Transfer(sbcApp);
-
   console.log('🎉 Done!');
 }
 
@@ -85,42 +81,6 @@ async function sendSimpleTransaction(sbcApp: SbcAppKit) {
     console.log('✅ Success! Tx:', result.transactionHash);
   } catch (error) {
     console.error('❌ Error:', error);
-  }
-}
-
-async function sendERC20Transfer(sbcApp: SbcAppKit) {
-  const transferData = encodeFunctionData({
-    abi: [{
-      name: 'transfer',
-      type: 'function',
-      inputs: [
-        { name: 'to', type: 'address' },
-        { name: 'amount', type: 'uint256' }
-      ]
-    }],
-    functionName: 'transfer',
-    args: [
-      '0x4a9f2769438FEAA328C28404Dd29d1917589FC45',
-      10000n // 0.01 SBC (6 decimals)
-    ]
-  });
-
-  const params = {
-    to: '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16' as const, // SBC on Base Sepolia
-    data: transferData,
-    value: '0'
-  };
-
-  try {
-    console.log('\n💰 Estimating ERC-20 transfer...');
-    const estimate = await sbcApp.estimateUserOperation(params);
-    console.log('Gas estimate:', estimate.totalGasCost, 'wei');
-    
-    // Uncomment to actually send:
-    // const result = await sbcApp.sendUserOperation(params);
-    // console.log('✅ Transfer successful!', result.transactionHash);
-  } catch (error) {
-    console.error('❌ Transfer failed:', error);
   }
 }
 
