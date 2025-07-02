@@ -16,4 +16,4 @@ export type {
   ChainConfig,
   CallParams,
   LoggingConfig
-} from '@sbc/core'; 
+} from '@stablecoin.xyz/core'; 

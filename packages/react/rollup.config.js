@@ -30,5 +30,5 @@ export default {
       exclude: ['**/*.test.ts', '**/*.test.tsx'],
     }),
   ],
-  external: ['react', 'react-dom', 'viem', '@sbc/core'],
+  external: ['react', 'react-dom', 'viem', '@stablecoin.xyz/core'],
 }; 

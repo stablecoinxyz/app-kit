@@ -5,7 +5,7 @@ import type {
   SendUserOperationParams, 
   UserOperationResult,
   UserOperationEstimate
-} from '@sbc/core';
+} from '@stablecoin.xyz/core';
 import type { UseUserOperationOptions, UserOperationState } from '../types';
 
 export interface UseUserOperationReturn extends UserOperationState {

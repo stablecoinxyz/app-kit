@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { SbcAppKit } from '@sbc/core';
+import { SbcAppKit } from '@stablecoin.xyz/core';
 import type { SbcProviderProps, SbcContextValue } from '../types';
 
 const SbcContext = createContext<SbcContextValue | undefined>(undefined);

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSbcContext } from '../components/SbcProvider';
-import type { AccountInfo } from '@sbc/core';
+import type { AccountInfo } from '@stablecoin.xyz/core';
 
 export interface UseSbcAppReturn {
   /** SBC App Kit instance */
-  sbcKit: import('@sbc/core').SbcAppKit | null;
+  sbcKit: import('@stablecoin.xyz/core').SbcAppKit | null;
   /** Whether the SDK is initialized */
   isInitialized: boolean;
   /** Initialization error if any */

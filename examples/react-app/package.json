@@ -11,10 +11,10 @@
     "gasless",
     "smart-account"
   ],
-  "dependencies": {
-    "@sbc/react": "workspace:*",
-    "@sbc/core": "workspace:*",
-    "react": "^18.2.0",
+      "dependencies": {
+      "@stablecoin.xyz/react": "workspace:*",
+      "@stablecoin.xyz/core": "workspace:*",
+      "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "^5.0.1",
     "viem": "^2.31.4",

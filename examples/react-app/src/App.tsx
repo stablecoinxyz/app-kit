@@ -4,7 +4,7 @@ import {
   useSbcApp, 
   useUserOperation,
   type SbcAppKitConfig
-} from '@sbc/react';
+} from '@stablecoin.xyz/react';
 import './App.css';
 import { Hex, encodeFunctionData } from 'viem';
 import { useState, useEffect, useCallback } from 'react';

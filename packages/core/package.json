@@ -1,5 +1,5 @@
 {
-  "name": "@sbc/core",
+  "name": "@stablecoin.xyz/core",
   "version": "0.1.0",
   "description": "Core TypeScript SDK for SBC Account Abstraction infrastructure",
   "type": "module",

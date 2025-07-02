@@ -6,8 +6,8 @@
 
 ### ✅ Current Packages
 
-- **@sbc/core** - Backend TypeScript SDK
-- **@sbc/react** - React hooks and components
+- **@stablecoin.xyz/core** - Backend TypeScript SDK
+- **@stablecoin.xyz/react** - React hooks and components
 
 ### 🎯 Demo Goals
 
@@ -17,7 +17,7 @@
 
 ## 📋 Future Considerations
 
-### @sbc/vanilla - Vanilla JavaScript Package
+### @stablecoin.xyz/vanilla - Vanilla JavaScript Package
 
 **Removed for initial release** - Will reconsider post-demo based on:
 
@@ -40,7 +40,7 @@
 
 ```javascript
 // Simple, framework-agnostic API
-import { SbcKit } from '@sbc/vanilla';
+import { SbcKit } from '@stablecoin.xyz/vanilla';
 
 const sbc = new SbcKit({
   apiKey: 'your-key',
@@ -60,10 +60,10 @@ sbc.on('accountChanged', (account) => {
 #### 🎨 **Architecture Strategy**
 
 ```text
-@sbc/core     → Node.js/backend logic (✅ Exists)
-@sbc/vanilla  → Browser-compatible wrapper of core (🤔 Future)
-@sbc/react    → React hooks around vanilla (✅ Exists, could refactor)
-@sbc/vue      → Vue composables around vanilla (🔮 Far future)
+@stablecoin.xyz/core     → Node.js/backend logic (✅ Exists)
+@stablecoin.xyz/vanilla  → Browser-compatible wrapper of core (🤔 Future)
+@stablecoin.xyz/react    → React hooks around vanilla (✅ Exists, could refactor)
+@stablecoin.xyz/vue      → Vue composables around vanilla (🔮 Far future)
 ```
 
 #### 📈 **Decision Criteria**

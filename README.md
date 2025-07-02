@@ -7,13 +7,13 @@ A TypeScript SDK for SBC Account Abstraction infrastructure - send gasless trans
 ### Installation
 
 ```bash
-npm install @sbc/core
+npm install @stablecoin.xyz/core
 ```
 
 ### Basic Usage
 
 ```typescript
-import { SbcAppKit } from '@sbc/core';
+import { SbcAppKit } from '@stablecoin.xyz/core';
 import { baseSepolia } from 'viem/chains';
 
 const sbcAppKit = new SbcAppKit({
@@ -34,8 +34,8 @@ console.log('Transaction hash:', result.transactionHash);
 
 ## 📁 Package Structure
 
-- **[@sbc/core](./packages/core)** - Backend SDK (✅ Ready)
-- **[@sbc/react](./packages/react)** - React hooks & components (✅ Ready)
+- **[@stablecoin.xyz/core](./packages/core)** - Backend SDK (✅ Ready)
+- **[@stablecoin.xyz/react](./packages/react)** - React hooks & components (✅ Ready)
 
 ## 🔧 Development
 

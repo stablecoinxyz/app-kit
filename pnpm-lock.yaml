@@ -65,10 +65,10 @@ importers:
 
   examples/react-app:
     dependencies:
-      '@sbc/core':
+      '@stablecoin.xyz/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@sbc/react':
+      '@stablecoin.xyz/react':
         specifier: workspace:*
         version: link:../../packages/react
       react:
@@ -160,7 +160,7 @@ importers:
 
   packages/react:
     dependencies:
-      '@sbc/core':
+      '@stablecoin.xyz/core':
         specifier: workspace:*
         version: link:../core
       react:

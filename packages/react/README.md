@@ -1,11 +1,11 @@
-# @sbc/react
+# @stablecoin.xyz/react
 
 React hooks and components for SBC Account Abstraction. Build seamless gasless transaction experiences in your React applications.
 
 ## Installation
 
 ```bash
-npm install @sbc/react @sbc/core viem react react-dom
+npm install @stablecoin.xyz/react @stablecoin.xyz/core viem react react-dom
 ```
 
 ## Quick Start
@@ -17,7 +17,7 @@ Wrap your app with the `SbcProvider`:
 ```tsx
 import React from 'react';
 import { base } from 'viem/chains';
-import { SbcProvider, type SbcAppKitConfig } from '@sbc/react';
+import { SbcProvider, type SbcAppKitConfig } from '@stablecoin.xyz/react';
 
 const config: SbcAppKitConfig = {
   apiKey: process.env.REACT_APP_SBC_API_KEY!,
@@ -51,7 +51,7 @@ function App() {
 
 ```tsx
 import React from 'react';
-import { useSbcApp, useUserOperation } from '@sbc/react';
+import { useSbcApp, useUserOperation } from '@stablecoin.xyz/react';
 
 function Dashboard() {
   const { 
@@ -212,7 +212,7 @@ import type {
   SbcAppKitConfig,
   UserOperationResult,
   AccountInfo 
-} from '@sbc/react';
+} from '@stablecoin.xyz/react';
 ```
 
 ## Error Handling

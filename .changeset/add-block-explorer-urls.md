@@ -1,5 +1,5 @@
 ---
-"@sbc/core": major
+"@stablecoin.xyz/core": major
 ---
 
 Consolidate chain configuration and add block explorer URLs

@@ -1,4 +1,4 @@
-import type { SbcAppKitConfig, SbcAppKit } from '@sbc/core';
+import type { SbcAppKitConfig, SbcAppKit } from '@stablecoin.xyz/core';
 import type { ReactNode } from 'react';
 
 export interface SbcProviderProps {
@@ -23,7 +23,7 @@ export interface SbcContextValue {
 
 export interface UseUserOperationOptions {
   /** Callback fired on successful transaction */
-  onSuccess?: (result: import('@sbc/core').UserOperationResult) => void;
+  onSuccess?: (result: import('@stablecoin.xyz/core').UserOperationResult) => void;
   /** Callback fired on transaction error */
   onError?: (error: Error) => void;
   /** Auto-refresh account after successful transaction */
@@ -40,7 +40,7 @@ export interface UserOperationState {
   /** Error from the last transaction */
   error: Error | null;
   /** Result from the last successful transaction */
-  data: import('@sbc/core').UserOperationResult | null;
+  data: import('@stablecoin.xyz/core').UserOperationResult | null;
   /** Reset the state */
   reset: () => void;
 } 

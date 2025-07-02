@@ -1,6 +1,6 @@
 # SBC React App Example
 
-A complete React application demonstrating how to integrate SBC Account Abstraction using the `@sbc/react` package. This example shows gasless transactions, smart account management, and real-time transaction tracking.
+A complete React application demonstrating how to integrate SBC Account Abstraction using the `@stablecoin.xyz/react` package. This example shows gasless transactions, smart account management, and real-time transaction tracking.
 
 ## 🚀 Quick Start
 
@@ -59,7 +59,7 @@ The app is configured to use Base Sepolia testnet with proper viem chain integra
 
 ```tsx
 import { baseSepolia } from 'viem/chains';
-import { SbcProvider, type SbcAppKitConfig } from '@sbc/react';
+import { SbcProvider, type SbcAppKitConfig } from '@stablecoin.xyz/react';
 
 const config: SbcAppKitConfig = {
   apiKey: process.env.REACT_APP_SBC_API_KEY || 'your_api_key_here',
@@ -269,7 +269,7 @@ The app includes basic error scenarios for testing:
 ## 📚 Learn More
 
 - **[SBC Documentation](https://docs.stablecoin.xyz)** - Complete SBC guides
-- **[@sbc/react Package](../../packages/react/)** - React package docs
+- **[@stablecoin.xyz/react Package](../../packages/react/)** - React package docs
 - **[Viem Documentation](https://viem.sh)** - Blockchain interaction library
 - **[Base Network](https://base.org)** - Layer 2 network information
 
@@ -278,7 +278,7 @@ The app includes basic error scenarios for testing:
 ### Adding New Features
 
 1. **New Transaction Types**: Add to the `handleSendTransaction` function
-2. **Additional Hooks**: Import more hooks from `@sbc/react`
+2. **Additional Hooks**: Import more hooks from `@stablecoin.xyz/react`
 3. **Custom Components**: Create reusable components for common patterns
 4. **Enhanced UI**: Extend the CSS for better user experience
 

@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- **Complete React package** (`@sbc/react`) with hooks and components
+- **Complete React package** (`@stablecoin.xyz/react`) with hooks and components
   - `useSbcApp()` - Account management and SDK access
   - `useUserOperation()` - Transaction state management
   - `SbcProvider` - React context provider
@@ -36,7 +36,7 @@ All notable changes to this project will be documented in this file.
 - **BREAKING**: Logging config now requires explicit logger functions
 - **Internal**: Migrated from npm to pnpm for better workspace dependency management
 - **Internal**: Hidden `staging` property from public documentation (internal dev use only)
-- **Internal**: Removed @sbc/vanilla package (deferred to post-demo evaluation)
+- **Internal**: Removed @stablecoin.xyz/vanilla package (deferred to post-demo evaluation)
 
 ### Fixed
 

@@ -1,5 +1,5 @@
 ---
-"@sbc/react": minor
+"@stablecoin.xyz/react": minor
 ---
 
 Enhance account information UI with separate owner and smart account sections

@@ -1,5 +1,5 @@
 {
-  "name": "@sbc/app-kit",
+  "name": "@stablecoin.xyz/app-kit",
   "version": "0.1.0",
   "description": "SBC App Kit - a monorepo for the SBC Account Abstraction SDK",
   "private": true,
@@ -9,8 +9,8 @@
   ],
   "scripts": {
     "build": "pnpm --recursive --filter './packages/*' run build",
-    "build:core": "pnpm --filter @sbc/core run build",
-    "build:react": "pnpm --filter @sbc/react run build",
+    "build:core": "pnpm --filter @stablecoin.xyz/core run build",
+    "build:react": "pnpm --filter @stablecoin.xyz/react run build",
     "dev": "pnpm --recursive --filter './packages/*' run dev",
     "test": "pnpm --recursive --filter './packages/*' run test",
     "test:ci": "pnpm --recursive --filter './packages/*' run test:ci",
