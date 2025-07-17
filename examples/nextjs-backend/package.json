@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "pnpm link ../../packages/core ../../packages/react && next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "install:local": "pnpm link ../../packages/core ../../packages/react"
   },
   "dependencies": {
     "@stablecoin.xyz/core": "^1.0.1",

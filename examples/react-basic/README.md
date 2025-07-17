@@ -1,86 +1,55 @@
-# SBC React App Example
+# SBC React Basic Example
 
-This example demonstrates basic integration with SBC Account Abstraction in a React application.
+A minimal React application demonstrating SBC Account Abstraction integration.
 
-⚠️ **IMPORTANT: Demo vs Production Usage**
+## 🚀 Quick Start
 
-This example uses a demo account for illustration purposes. For production applications, follow these security best practices:
+```bash
+# Clone and setup
+git clone https://github.com/stablecoinxyz/app-kit.git
+cd app-kit/examples/react-basic
+npm install
+npm run dev
+```
 
-## Security Best Practices
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-1. **NEVER expose private keys in client-side code**
-   - Private keys should be kept secure on a backend server
-   - Use proper wallet integration for user accounts
+## 📦 What's Included
 
-2. **Recommended Production Patterns:**
+- ✅ Basic smart account creation
+- ✅ Balance checking (ETH & SBC tokens)
+- ✅ Gasless transactions via paymaster
+- ✅ Transaction status monitoring
+- ✅ TypeScript support
 
-   ### A. Next.js Backend Integration
+## 🛠️ Development
 
-   ```typescript
-   // Frontend (React/Next.js)
-   const sendTransaction = async () => {
-     const response = await fetch('/api/send-transaction', {
-       method: 'POST',
-       body: JSON.stringify({
-         to: recipient,
-         amount: amount
-       })
-     });
-   };
+### Using Published Packages (Default)
+```bash
+npm install     # Uses @stablecoin.xyz/core@^1.0.1
+npm run dev
+```
 
-   // Backend (Next.js API route)
-   export async function handler(req, res) {
-     const privateKey = process.env.PRIVATE_KEY; // Safely stored
-     const sbcAppKit = new SbcAppKit({
-       privateKey,
-       // other config
-     });
-     // Handle transaction
-   }
-   ```
+### Using Local Development Packages
+```bash
+npm run dev:local  # Auto-links to local workspace packages
+```
 
-   ### B. Wallet Integration
+## 🏗️ Key Components
 
-   ```typescript
-   import { WalletConnect } from '@web3-react/walletconnect';
-   
-   const config = {
-     apiKey: process.env.VITE_SBC_API_KEY,
-     // Get signer from wallet instead of private key
-     signer: wallet.getSigner()
-   };
-   ```
+- **SbcProvider**: React context for account abstraction
+- **useSbcApp**: Hook for smart account operations
+- **useUserOperation**: Hook for transaction management
 
-## Getting Started
+## 📚 Learn More
 
-1. Install dependencies:
+- [SBC App Kit Documentation](https://github.com/stablecoinxyz/app-kit)
+- [Account Abstraction Guide](https://github.com/stablecoinxyz/app-kit#readme)
+- [API Reference](https://github.com/stablecoinxyz/app-kit/tree/main/packages)
 
-   ```bash
-   npm install
-   ```
+## 🎯 Next Steps
 
-2. Create `.env` file:
-
-   ```
-   VITE_SBC_API_KEY=your_api_key_here
-   ```
-
-3. Start the development server:
-
-   ```bash
-   npm start
-   ```
-
-## Features Demonstrated
-
-- Smart SBC token transfers
-- Automatic permit fallback
-- Real-time balance tracking
-- Gas estimation
-- Error handling
-
-## Learn More
-
-- [SBC App Kit Documentation](https://docs.stablecoin.xyz)
-- [Account Abstraction Guide](https://docs.stablecoin.xyz/guides/account-abstraction)
-- [Security Best Practices](https://docs.stablecoin.xyz/security)
+1. Copy this example to your project
+2. Add your own components
+3. Deploy to production
+4. Scale with confidence!

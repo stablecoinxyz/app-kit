@@ -1,3 +1,6 @@
 packages:
-  - 'packages/*'
-  - 'examples/*' 
+  - packages/*
+
+overrides:
+  '@stablecoin.xyz/core': link:packages/core
+  '@stablecoin.xyz/react': link:packages/react

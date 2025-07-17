@@ -18,8 +18,16 @@
     "lint:fix": "pnpm --recursive --filter './packages/*' run lint:fix",
     "setup:react": "cd examples/react-basic && npm install",
     "setup:nextjs": "cd examples/nextjs-backend && npm install",
-    "start:react": "cd examples/react-basic && npm run start",
-    "start:nextjs": "cd examples/nextjs-backend && npm run start",
+    "setup:wallet": "cd examples/react-wallet && npm install",
+    "setup:backend": "cd examples/backend && npm install",
+    "setup:all": "pnpm run setup:react && pnpm run setup:nextjs && pnpm run setup:wallet && pnpm run setup:backend",
+    "dev:react": "cd examples/react-basic && npm run dev:local",
+    "dev:nextjs": "cd examples/nextjs-backend && npm run dev:local",
+    "dev:wallet": "cd examples/react-wallet && npm run dev:local",
+    "dev:backend": "cd examples/backend && npm run dev:local",
+    "start:react": "cd examples/react-basic && npm run dev",
+    "start:nextjs": "cd examples/nextjs-backend && npm run dev",
+    "start:wallet": "cd examples/react-wallet && npm run dev",
     "start:backend": "cd examples/backend && npm run start",
     "test:compatibility": "npm run test:react18 && npm run test:react19",
     "test:react18": "cd examples/react-basic && npm install react@^18.0.0 react-dom@^18.0.0 && npm run build",
@@ -71,5 +79,9 @@
   "bugs": {
     "url": "https://github.com/stablecoinxyz/app-kit/issues"
   },
-  "homepage": "https://github.com/stablecoinxyz/app-kit#readme"
+  "homepage": "https://github.com/stablecoinxyz/app-kit#readme",
+  "dependencies": {
+    "@stablecoin.xyz/core": "link:packages/core",
+    "@stablecoin.xyz/react": "link:packages/react"
+  }
 }

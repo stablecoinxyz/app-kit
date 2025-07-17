@@ -1,6 +1,60 @@
-# SBC App Kit Examples
+# SBC App Kit
 
-This repository contains official examples demonstrating different patterns for integrating SBC App Kit in your applications.
+> Account Abstraction SDK for developers who otherwise couldn't care to set up their own paymasters.
+
+## 🚀 Quick Start for Users
+
+Each example is **self-contained** and uses published npm packages. Clone any example and run:
+
+```bash
+git clone https://github.com/stablecoinxyz/app-kit.git
+cd app-kit/examples/react-basic
+npm install
+npm run dev
+```
+
+## 🔧 Development Setup
+
+### For Contributors (Full Monorepo)
+
+```bash
+# Install workspace dependencies
+pnpm install
+pnpm run build
+
+# Set up all examples with published versions
+pnpm run setup:all
+
+# Development with local packages (auto-links to workspace)
+pnpm run dev:react     # React basic with local packages
+pnpm run dev:nextjs    # Next.js with local packages  
+pnpm run dev:wallet    # React wallet with local packages
+pnpm run dev:backend   # Backend with local packages
+```
+
+### For Package Development
+
+When developing packages, examples automatically use your local changes:
+
+```bash
+# Make changes to packages/core or packages/react
+pnpm run build  # Build your changes
+
+# Examples will automatically use local versions
+pnpm run dev:react  # Uses your local packages
+```
+
+## 📋 Dual Workflow Approach
+
+### 🎯 Published Versions (Default)
+- **Examples use**: `@stablecoin.xyz/core@^1.0.1`
+- **Best for**: Users, demos, production
+- **Run**: `npm install && npm run dev`
+
+### 🛠️ Local Development  
+- **Examples use**: Linked workspace packages
+- **Best for**: Contributors, package development  
+- **Run**: `npm run dev:local` or root `pnpm run dev:react`
 
 ## 🎯 Choose Your Pattern
 

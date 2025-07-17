@@ -6,9 +6,12 @@
   "private": true,
   "scripts": {
     "start": "tsx basic-usage.ts",
-    "dev": "tsx watch basic-usage.ts"
+    "dev": "tsx watch basic-usage.ts",
+    "dev:local": "pnpm link ../../packages/core && tsx watch basic-usage.ts",
+    "install:local": "pnpm link ../../packages/core"
   },
   "dependencies": {
+    "@stablecoin.xyz/core": "^1.0.1",
     "dotenv": "^16.0.0",
     "viem": "^2.7.13"
   },
