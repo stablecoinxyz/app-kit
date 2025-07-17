@@ -1,4 +1,4 @@
-import { Address, Hex, Chain } from 'viem';
+import { Address, Hex, Chain, WalletClient } from 'viem';
 
 export interface AaProxyConfig {
   /** Blockchain network to operate on */
@@ -17,8 +17,15 @@ export interface SbcAppKitConfig {
   chain: Chain;
   
   /** 
+   * Optional: Connected wallet client for signing operations
+   * Use this for production wallet integration where user's wallet signs transactions
+   */
+  walletClient?: WalletClient;
+  
+  /** 
    * Optional: Custom wallet private key 
    * @default Auto-generated random private key
+   * @deprecated Use walletClient for production wallet integration
    */
   privateKey?: Hex;
   

@@ -463,7 +463,15 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
-      <h1>🏦 SBC Account Abstraction Demo</h1>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
+          <img src="/sbc-logo.png" alt="SBC Logo" width={36} height={36} />
+          SBC Account Abstraction Demo
+        </h1>
+        <p className="text-gray-600">
+          True decentralized smart accounts with user wallet signing
+        </p>
+      </div>
       
       <SecurityWarning />
 

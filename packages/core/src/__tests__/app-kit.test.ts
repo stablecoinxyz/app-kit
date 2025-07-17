@@ -131,6 +131,75 @@ describe('SbcAppKit', () => {
       expect(kit).toBeInstanceOf(SbcAppKit);
     });
 
+    it('should initialize with wallet client', () => {
+      const mockWalletClient = {
+        account: {
+          address: '0x1234567890123456789012345678901234567890'
+        },
+        chain: { id: 8453 } // Base mainnet
+      } as any;
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: base,
+        walletClient: mockWalletClient
+      };
+
+      const kit = new SbcAppKit(config);
+      expect(kit).toBeInstanceOf(SbcAppKit);
+      expect(kit.getOwnerAddress()).toBe('0x1234567890123456789012345678901234567890');
+    });
+
+    it('should throw error when wallet client has no account', () => {
+      const mockWalletClient = {
+        account: null,
+        chain: { id: 8453 }
+      } as any;
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: base,
+        walletClient: mockWalletClient
+      };
+
+      expect(() => new SbcAppKit(config)).toThrow('Provided wallet client must have an account attached');
+    });
+
+    it('should throw error when wallet client chain does not match config chain', () => {
+      const mockWalletClient = {
+        account: {
+          address: '0x1234567890123456789012345678901234567890'
+        },
+        chain: { id: 1 } // Ethereum mainnet
+      } as any;
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: base, // Base mainnet (id: 8453)
+        walletClient: mockWalletClient
+      };
+
+      expect(() => new SbcAppKit(config)).toThrow('Wallet client chain (1) does not match config chain (8453)');
+    });
+
+    it('should throw error when both wallet client and private key are provided', () => {
+      const mockWalletClient = {
+        account: {
+          address: '0x1234567890123456789012345678901234567890'
+        },
+        chain: { id: 8453 }
+      } as any;
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: base,
+        walletClient: mockWalletClient,
+        privateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+      };
+
+      expect(() => new SbcAppKit(config)).toThrow('Cannot specify both walletClient and privateKey');
+    });
+
     it('should throw error for invalid API key', () => {
       const config: SbcAppKitConfig = {
         apiKey: 'invalid-key',

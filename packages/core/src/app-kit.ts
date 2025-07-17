@@ -44,11 +44,27 @@ export class SbcAppKit {
     
     // Initialize clients
     this.publicClient = createSbcPublicClient(config.chain, config.rpcUrl);
-    this.walletClient = createSbcWalletClient(config.chain, config.privateKey, config.rpcUrl);
     
-    // Validate that wallet client has an account attached
-    if (!this.walletClient.account) {
-      throw new Error('No account attached to wallet client');
+    // Use provided wallet client or create one from private key
+    if (config.walletClient) {
+      this.walletClient = config.walletClient;
+      
+      // Validate that the provided wallet client has an account attached
+      if (!this.walletClient.account) {
+        throw new Error('Provided wallet client must have an account attached');
+      }
+      
+      // Validate that the wallet client is on the correct chain
+      if (this.walletClient.chain?.id !== config.chain.id) {
+        throw new Error(`Wallet client chain (${this.walletClient.chain?.id}) does not match config chain (${config.chain.id})`);
+      }
+    } else {
+      this.walletClient = createSbcWalletClient(config.chain, config.privateKey, config.rpcUrl);
+      
+      // Validate that wallet client has an account attached
+      if (!this.walletClient.account) {
+        throw new Error('No account attached to wallet client');
+      }
     }
     
     // Build Account Abstraction API URL
@@ -191,6 +207,8 @@ export class SbcAppKit {
       throw new Error('No account attached to wallet client');
     }
 
+    this.logInfo('walletClient', this.walletClient);
+
     try {
       this.logInfo('initializing_smart_account_client');
 
@@ -295,6 +313,15 @@ export class SbcAppKit {
 
     // Validate chain is supported
     getChainConfig(config.chain);
+
+    // Validate wallet configuration
+    if (config.walletClient && config.privateKey) {
+      throw new Error('Cannot specify both walletClient and privateKey. Use walletClient for production wallet integration or privateKey for backend operations.');
+    }
+
+    if (!config.walletClient && !config.privateKey) {
+      // This is fine - we'll generate a random private key
+    }
   }
 
   /**
