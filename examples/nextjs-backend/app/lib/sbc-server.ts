@@ -7,16 +7,18 @@ const apiKey = process.env.SBC_API_KEY;
 const privateKey = process.env.OWNER_PRIVATE_KEY as Hex;
 
 if (!apiKey) {
-  console.warn('Missing SBC_API_KEY environment variable - using placeholder');
+  console.warn('Missing SBC_API_KEY environment variable');
+  throw new Error('Missing SBC_API_KEY environment variable');
 }
 
-if (!privateKey || privateKey === '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef') {
-  console.warn('Missing or placeholder OWNER_PRIVATE_KEY environment variable');
+if (!privateKey) {
+  console.warn('Missing OWNER_PRIVATE_KEY environment variable');
+  throw new Error('Missing OWNER_PRIVATE_KEY environment variable');
 }
 
 const config = {
-  apiKey: apiKey || 'placeholder_api_key',
   chain: baseSepolia,
+  apiKey,
   privateKey,
 };
 
@@ -30,9 +32,11 @@ export async function getSbcAppKit(): Promise<SbcAppKit & {
 }> {
   if (!sbcAppKitInstance) {
     sbcAppKitInstance = new SbcAppKit(config);
+
     // --- Deploy smart account if needed ---
     try {
       const accountInfo = await sbcAppKitInstance.getAccount();
+      console.log('accountInfo', accountInfo);
       if (!accountInfo.isDeployed) {
         await sbcAppKitInstance.sendUserOperation({
           to: '0x0000000000000000000000000000000000000000',
@@ -71,10 +75,3 @@ export async function sendUserOperation(params: any) {
   const sbcAppKit = await getSbcAppKit();
   return sbcAppKit.sendUserOperation(params);
 }
-
-// Export config for client-side (without private key)
-export const clientConfig = {
-  apiKey: process.env.NEXT_PUBLIC_SBC_API_KEY || 'your_api_key_here',
-  chain: baseSepolia,
-  debug: true,
-}; 

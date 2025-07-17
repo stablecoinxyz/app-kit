@@ -3,7 +3,6 @@
 import { baseSepolia } from 'viem/chains';
 import { 
   SbcProvider, 
-  useSbcApp, 
   type SbcAppKitConfig
 } from '@stablecoin.xyz/react';
 import React, { useState, useEffect, useCallback, Component } from 'react';
@@ -110,16 +109,6 @@ class ErrorBoundary extends Component<
 }
 
 function Dashboard() {
-  const { 
-    sbcAppKit, 
-    isInitialized, 
-    error, 
-    account, 
-    isLoadingAccount, 
-    accountError,
-    refreshAccount 
-  } = useSbcApp();
-
   // State for transaction status and error
   const [txStatus, setTxStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [txError, setTxError] = useState<string | null>(null);
@@ -134,6 +123,28 @@ function Dashboard() {
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [ownerAddress, setOwnerAddress] = useState<string | null>(null);
   const [txResult, setTxResult] = useState<any>(null); // Only declare once
+
+  // State for backend smart account info
+  const [account, setAccount] = useState<any>(null);
+  const [isLoadingAccount, setIsLoadingAccount] = useState(true);
+  const [accountError, setAccountError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsLoadingAccount(true);
+    fetch('/api/account-info')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch account info');
+        return res.json();
+      })
+      .then(data => {
+        setAccount(data);
+        setIsLoadingAccount(false);
+      })
+      .catch(err => {
+        setAccountError(err.message);
+        setIsLoadingAccount(false);
+      });
+  }, []);
 
   // Effect to fetch owner address when sbcAppKit changes
   useEffect(() => {
@@ -157,10 +168,10 @@ function Dashboard() {
 
   // Function to fetch balances for a specific address
   const fetchBalancesForAddress = useCallback(async (address: string): Promise<{eth: string, sbc: string}> => {
-    if (!sbcAppKit) return {eth: '0', sbc: '0'};
+    if (!account?.publicClient) return {eth: '0', sbc: '0'};
 
     try {
-      const publicClient = (sbcAppKit as any).publicClient;
+      const publicClient = account.publicClient;
       
       // Fetch ETH and SBC balances in parallel
       const [ethBalance, sbcBalance] = await Promise.all([
@@ -181,7 +192,7 @@ function Dashboard() {
       console.error(`Failed to fetch balances for ${address}:`, error);
       return {eth: '0', sbc: '0'};
     }
-  }, [sbcAppKit]);
+  }, [account]);
 
   // Helper function to format SBC balance
   const formatSbcBalance = (balance: string | null): string => {
@@ -205,22 +216,23 @@ function Dashboard() {
 
   // Helper function to get explorer URL for transaction hash
   const getExplorerUrl = (txHash: string): string => {
-    if (!sbcAppKit) throw new Error('SBC AppKit not initialized');
-    const chainConfig = sbcAppKit.getChainConfig();
-    return `${chainConfig.blockExplorerUrl}/tx/${txHash}`;
+    // Base Sepolia explorer URL
+    return `https://sepolia.basescan.org/tx/${txHash}`;
   };
 
   // Function to fetch all balances
   const fetchAllBalances = useCallback(async () => {
-    if (!sbcAppKit || !account?.address) return;
+    if (!account?.address) return;
 
     setIsLoadingBalances(true);
+    console.log(`fetching balances for ${account.address}`);
     try {
       const response = await fetch('/api/owner-address');
       if (!response.ok) {
         throw new Error('Failed to fetch owner address');
       }
       const { ownerAddress } = await response.json();
+      console.log(`ownerAddress: ${ownerAddress}`);
       
       // Fetch balances for both addresses in parallel
       const [ownerBals, smartAccountBals] = await Promise.all([
@@ -237,14 +249,14 @@ function Dashboard() {
     } finally {
       setIsLoadingBalances(false);
     }
-  }, [sbcAppKit, account?.address, fetchBalancesForAddress]);
+  }, [account?.address, fetchBalancesForAddress]);
 
   // Effect to fetch balances on mount and when account changes
   useEffect(() => {
-    if (isInitialized && account?.address) {
+    if (account?.address) {
       fetchAllBalances();
     }
-  }, [isInitialized, account?.address, fetchAllBalances]);
+  }, [account?.address, fetchAllBalances]);
 
   const validateAddress = (address: string): boolean => {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
@@ -313,16 +325,16 @@ function Dashboard() {
     return String(value);
   };
 
-  if (error || accountError) {
+  if (accountError) {
     return (
       <div className="error">
         <h3>Error</h3>
-        <p>{getErrorMessage(error || accountError)}</p>
+        <p>{accountError}</p>
       </div>
     );
   }
 
-  if (!isInitialized || isLoadingAccount) {
+  if (!account || isLoadingAccount) {
     return (
       <div className="loading">
         <h3>Loading...</h3>
@@ -341,44 +353,54 @@ function Dashboard() {
         ) : accountError ? (
           <div className="error">
             <p>Error: {getErrorMessage(accountError)}</p>
-            <button onClick={refreshAccount}>Retry</button>
+            <button onClick={() => {
+              setAccountError(null);
+              setIsLoadingAccount(true);
+              fetch('/api/account-info')
+                .then(res => {
+                  if (!res.ok) throw new Error('Failed to fetch account info');
+                  return res.json();
+                })
+                .then(data => {
+                  setAccount(data);
+                  setIsLoadingAccount(false);
+                })
+                .catch(err => {
+                  setAccountError(err.message);
+                  setIsLoadingAccount(false);
+                });
+            }}>Retry</button>
           </div>
         ) : account ? (
           <div>
             {/* Owner Section */}
             <div className="section">
-              <h4>👤 Owner (EOA)</h4>
-              <p><strong>Address:</strong> <span className="monospace">{ownerAddress || 'Loading...'}</span></p>
-              {ownerAddress === 'Environment setup required' && (
-                <div className="warning" style={{marginTop: '8px'}}>
-                  ⚠️ Environment variables not configured. Please create a <code>.env.local</code> file with:
-                  <pre style={{fontSize: '12px', margin: '8px 0', padding: '8px', background: '#f5f5f5', borderRadius: '4px'}}>
-{`SBC_API_KEY=your_api_key_here
-NEXT_PUBLIC_SBC_API_KEY=your_api_key_here
-OWNER_PRIVATE_KEY=0x...`}
-                  </pre>
-                </div>
+              <h4>👤 EOA (Owner)</h4>
+              {accountError ? (
+                <p style={{ color: 'red' }}>Error: {accountError}</p>
+              ) : (
+                <>
+                  <p><strong>Address:</strong> <span className="monospace">{account?.owner ? safeString(account.owner.address) : 'Loading...'}</span></p>
+                  <p><strong>ETH Balance:</strong> {account?.owner ? formatEthBalance(account.owner.ethBalance) : 'Loading...'} ETH</p>
+                  <p><strong>SBC Balance:</strong> {account?.owner ? formatSbcBalance(account.owner.sbcBalance) : 'Loading...'} SBC</p>
+                </>
               )}
-              <p><strong>ETH Balance:</strong> {
-                isLoadingBalances ? 'Loading...' : formatEthBalance(ownerBalances.eth)
-              } ETH</p>
-              <p><strong>SBC Balance:</strong> {
-                isLoadingBalances ? 'Loading...' : formatSbcBalance(ownerBalances.sbc)
-              } SBC</p>
             </div>
 
             {/* Smart Account Section */}
             <div className="section">
               <h4>🤖 Smart Account</h4>
-              <p><strong>Address:</strong> <span className="monospace">{safeString(account.address)}</span></p>
-              <p><strong>Deployed:</strong> {account.isDeployed ? '✅ Yes' : '❌ No'}</p>
-              <p><strong>Nonce:</strong> {safeString(account.nonce)}</p>
-              <p><strong>ETH Balance:</strong> {
-                isLoadingBalances ? 'Loading...' : formatEthBalance(smartAccountBalances.eth)
-              } ETH</p>
-              <p><strong>SBC Balance:</strong> {
-                isLoadingBalances ? 'Loading...' : formatSbcBalance(smartAccountBalances.sbc)
-              } SBC</p>
+              {accountError ? (
+                <p style={{ color: 'red' }}>Error: {accountError}</p>
+              ) : (
+                <>
+                  <p><strong>Address:</strong> <span className="monospace">{account ? safeString(account.address) : 'Loading...'}</span></p>
+                  <p><strong>Deployed:</strong> {account ? (account.isDeployed ? '✅ Yes' : '❌ No') : 'Loading...'}</p>
+                  <p><strong>Nonce:</strong> {account ? safeString(account.nonce) : 'Loading...'}</p>
+                  <p><strong>ETH Balance:</strong> {account?.smartAccount ? formatEthBalance(account.smartAccount.ethBalance) : 'Loading...'} ETH</p>
+                  <p><strong>SBC Balance:</strong> {account?.smartAccount ? formatSbcBalance(account.smartAccount.sbcBalance) : 'Loading...'} SBC</p>
+                </>
+              )}
             </div>
 
             {smartAccountBalances.eth && parseFloat(smartAccountBalances.eth) > 0 && parseFloat(smartAccountBalances.eth) < 1000000000000000 && (
@@ -400,8 +422,21 @@ OWNER_PRIVATE_KEY=0x...`}
             )}
             
             <button onClick={() => {
-              refreshAccount();
-              fetchAllBalances();
+              setAccountError(null);
+              setIsLoadingAccount(true);
+              fetch('/api/account-info')
+                .then(res => {
+                  if (!res.ok) throw new Error('Failed to fetch account info');
+                  return res.json();
+                })
+                .then(data => {
+                  setAccount(data);
+                  setIsLoadingAccount(false);
+                })
+                .catch(err => {
+                  setAccountError(err.message);
+                  setIsLoadingAccount(false);
+                });
             }}>Refresh</button>
           </div>
         ) : null}
@@ -450,9 +485,9 @@ OWNER_PRIVATE_KEY=0x...`}
           <button
             onClick={handleSendTransaction}
             disabled={txStatus === 'loading' || !targetAddress || !!addressError || (
-              smartAccountBalances.sbc !== null && 
-              ownerBalances.sbc !== null && 
-              (BigInt(smartAccountBalances.sbc) + BigInt(ownerBalances.sbc)) < TRANSFER_AMOUNT
+              account?.owner?.sbcBalance !== undefined && 
+              account?.smartAccount?.sbcBalance !== undefined && 
+              (BigInt(account.owner.sbcBalance) + BigInt(account.smartAccount.sbcBalance)) < TRANSFER_AMOUNT
             )}
             className="primary"
           >
@@ -472,9 +507,9 @@ OWNER_PRIVATE_KEY=0x...`}
           </p>
         )}
 
-        {smartAccountBalances.sbc !== null && 
-         ownerBalances.sbc !== null && 
-         (BigInt(smartAccountBalances.sbc) + BigInt(ownerBalances.sbc)) < TRANSFER_AMOUNT && (
+        {account?.owner?.sbcBalance !== undefined && 
+         account?.smartAccount?.sbcBalance !== undefined && 
+         (BigInt(account.owner.sbcBalance) + BigInt(account.smartAccount.sbcBalance)) < TRANSFER_AMOUNT && (
           <p className="helper-text error">
             ❌ Insufficient SBC balance across both accounts
           </p>
@@ -519,7 +554,7 @@ OWNER_PRIVATE_KEY=0x...`}
       <div className="card debug">
         <h3>🔧 Debug Information</h3>
         <p><strong>Chain:</strong> {config.chain.name} (ID: {safeString(config.chain.id)})</p>
-        <p><strong>SDK Initialized:</strong> {isInitialized ? 'Yes' : 'No'}</p>
+        <p><strong>SDK Initialized:</strong> {account?.isInitialized ? 'Yes' : 'No'}</p>
       </div>
     </div>
   );
