@@ -58,7 +58,7 @@
     "viem": "^2.31.4"
   },
   "peerDependencies": {
-    "viem": "^2.31.4"
+    "viem": "^2.31.0"
   },
   "repository": {
     "type": "git",

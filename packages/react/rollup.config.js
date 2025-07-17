@@ -9,12 +9,12 @@ export default {
     {
       file: 'dist/index.js',
       format: 'cjs',
-      sourcemap: true,
+      sourcemap: false, // Disabled to prevent warnings in consuming apps
     },
     {
       file: 'dist/index.esm.js',
       format: 'esm',
-      sourcemap: true,
+      sourcemap: false, // Disabled to prevent warnings in consuming apps
     },
   ],
   plugins: [

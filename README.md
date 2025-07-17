@@ -1,176 +1,71 @@
-# SBC App Kit
+# SBC App Kit Examples
 
-A TypeScript SDK for SBC Account Abstraction infrastructure - send gasless transactions on Base and Base Sepolia.
+This repository contains official examples demonstrating different patterns for integrating SBC App Kit in your applications.
 
-## 🚀 Quick Start
+## 🎯 Choose Your Pattern
 
-### Installation
+### 1. [Basic React Example](./examples/react-basic)
 
-```bash
-npm install @stablecoin.xyz/core
-```
+- Simple React integration
+- Great for learning the basics
+- **Note**: Uses demo account, not for production
 
-### Basic Usage
+### 2. [Next.js Backend Example](./examples/nextjs-backend) ✨ RECOMMENDED
 
-```typescript
-import { SbcAppKit } from '@stablecoin.xyz/core';
-import { baseSepolia } from 'viem/chains';
+- Secure production pattern
+- Private keys on backend
+- API-based integration
+- Perfect for real applications
 
-const sbcAppKit = new SbcAppKit({
-  apiKey: 'sbc-your-api-key', // Get from SBC dashboard
-  chain: baseSepolia,
-  privateKey: '0x...', // Optional: auto-generated if not provided
-});
+### 3. [React Wallet Example](./examples/react-wallet)
 
-// Send gasless transaction
-const result = await sbcAppKit.sendUserOperation({
-  to: '0x...',
-  data: '0x...',
-  value: '0'
-});
+- Web3Modal integration
+- User wallet connection
+- No private keys in code
+- Standard Web3 experience
 
-console.log('Transaction hash:', result.transactionHash);
-```
+### 4. [Full Stack Example](./examples/full-stack)
 
-## 📁 Package Structure
+- Complete production setup
+- Combines backend security with wallet integration
+- Advanced features
+- Best practices implemented
 
-- **[@stablecoin.xyz/core](./packages/core)** - Backend SDK (✅ Ready)
-- **[@stablecoin.xyz/react](./packages/react)** - React hooks & components (✅ Ready)
+## 🔒 Security Best Practices
 
-## 🔧 Development
+Choose your integration pattern based on your security needs:
 
-```bash
-# Install dependencies
-npm install
+1. **Backend Integration** (Most Secure)
+   - Private keys on server
+   - API-based transactions
+   - Perfect for businesses
+   - Example: [Next.js Backend](./examples/nextjs-backend)
 
-# Build packages
-npm run build
-npm run build:core
+2. **Wallet Integration** (User-Controlled)
+   - Users bring their wallet
+   - No key management needed
+   - Standard Web3 experience
+   - Example: [React Wallet](./examples/react-wallet)
 
-# Run tests
-npm test
+3. **Basic Demo** (Learning Only)
+   - Simple integration
+   - Uses demo account
+   - Not for production
+   - Example: [React Basic](./examples/react-basic)
 
-# Run backend example
-cd examples/backend
-echo "SBC_API_KEY=sbc-your-key" > .env
-npm run start
-```
+## 🚀 Getting Started
 
-## 📖 API Reference
+1. Choose your pattern based on your needs
+2. Follow the README in the respective example directory
+3. Read the security considerations
+4. Implement in your project
 
-### SbcAppKit
+## 📚 Documentation
 
-```typescript
-interface SbcAppKitConfig {
-  apiKey: string;                    // SBC API key
-  chain: Chain;                      // viem Chain object
-  privateKey?: string;               // Optional: Custom private key (default: auto-generated)
-  rpcUrl?: string;                   // Optional: Custom RPC URL (default: chain's default RPC)
-  debug?: boolean;                   // Optional: Enable debug logging (default: false)
-  logging?: LoggingConfig;           // Optional: Production logging configuration (default: disabled)
-}
-```
+- [SBC App Kit Documentation](https://docs.stablecoin.xyz)
+- [Security Guide](https://docs.stablecoin.xyz/security)
+- [API Reference](https://docs.stablecoin.xyz/api)
 
-## 📚 API Reference
+## 🤝 Contributing
 
-### Core SDK (@stablecoin.xyz/core)
-
-#### SbcAppKit Class
-
-```typescript
-class SbcAppKit {
-  constructor(config: SbcAppKitConfig)
-  
-  // Transaction Methods
-  sendUserOperation(params: SendUserOperationParams): Promise<UserOperationResult>
-  estimateUserOperation(params: UserOperationParams): Promise<UserOperationEstimate>
-  
-  // Account Methods
-  getAccount(): Promise<AccountInfo>
-  getOwnerAddress(): string
-  
-  // Chain & Configuration
-  getChain(): Chain
-  getChainConfig(): ChainConfig
-}
-```
-
-#### Key Types
-
-```typescript
-interface SendUserOperationParams {
-  to: string;                          // Target contract address
-  data?: string;                       // Encoded transaction data (default: '0x')
-  value?: string;                      // ETH value to send (default: '0')
-}
-
-interface UserOperationResult {
-  transactionHash: string;             // Final transaction hash
-  userOperationHash: string;           // User operation hash
-  receipt: TransactionReceipt;         // Transaction receipt
-}
-
-interface AccountInfo {
-  address: string;                     // Smart account address
-  deploymentTransaction?: string;      // Deployment tx (if newly created)
-}
-```
-
-### React SDK (@stablecoin.xyz/react)
-
-#### Hooks
-
-```typescript
-// Main hook for SBC App Kit functionality
-function useSbcApp(): {
-  sbcAppKit: SbcAppKit | null;           // SDK instance
-  isInitialized: boolean;             // Whether SDK is ready
-  error: Error | null;                // Initialization error
-  account: AccountInfo | null;        // Smart account info
-  isLoadingAccount: boolean;          // Account loading state
-  accountError: Error | null;         // Account loading error
-  refreshAccount: () => Promise<void>; // Refresh account data
-}
-
-// Hook for sending transactions
-function useUserOperation(options?): {
-  sendUserOperation: (params: SendUserOperationParams) => Promise<void>;
-  isLoading: boolean;                 // Transaction in progress
-  isSuccess: boolean;                 // Transaction succeeded
-  isError: boolean;                   // Transaction failed
-  error: Error | null;                // Transaction error
-  data: UserOperationResult | null;   // Transaction result
-  reset: () => void;                  // Reset hook state
-}
-```
-
-#### Components
-
-```typescript
-// Provider component for React app
-<SbcProvider config={SbcAppKitConfig}>
-  {children}
-</SbcProvider>
-
-// Optional wallet connection UI
-<WalletConnect />
-```
-
-### Supported Chains
-
-- Base Mainnet (`base`)
-- Base Sepolia (`baseSepolia`)
-
-## 📝 Examples
-
-- [Backend Usage](./examples/backend) - Complete Node.js examples
-- [Error Handling](./examples/backend/error-handling-demo.ts) - Error decoding examples
-
-## 🔗 Links
-
-- [Core Package Docs](./packages/core)
-- [GitHub Issues](https://github.com/stablecoinxyz/app-kit/issues)
-
-## 📄 License
-
-MIT
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.

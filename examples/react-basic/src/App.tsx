@@ -14,25 +14,35 @@ import { useState, useEffect, useCallback } from 'react';
  * 
  * Features:
  * - Smart SBC token transfers with automatic permit fallback
- * - Gas estimation (hidden for demo - see comments to re-enable)
  * - Real-time balance tracking for both Owner and Smart Account
  * 
- * Gas Estimation Feature:
- * The gas estimation functionality is fully implemented but hidden from the UI.
- * To re-enable, uncomment the marked sections in the JSX below.
+ */
+
+/**
+ * ⚠️ SECURITY WARNING ⚠️
+ * This is a demo configuration using a demo account.
+ * In production:
+ * 1. NEVER expose private keys in client-side code
+ * 2. Use proper wallet integration (WalletConnect, Web3Modal, etc.)
+ * 3. Consider using a backend service for sensitive operations
+ * 
+ * See documentation for secure implementation patterns:
+ * - Next.js API Routes approach
+ * - Wallet integration approach
  */
 
 // Configuration Constants
 const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16'; // Base Sepolia
 const SBC_DECIMALS = 6;
-const TRANSFER_AMOUNT = BigInt('1000000'); // 1 SBC (6 decimals)
+const TRANSFER_AMOUNT = 1000000n; // 1 SBC (6 decimals)
 const PERMIT_DURATION_SECONDS = 600; // 10 minutes
 
 const config: SbcAppKitConfig = {
-  apiKey: process.env.REACT_APP_SBC_API_KEY || 'your_api_key_here',
+  apiKey: import.meta.env.VITE_SBC_API_KEY || 'your_api_key_here',
   chain: baseSepolia,
   debug: true,
-  privateKey: process.env.REACT_APP_MY_PRIVATE_KEY as Hex,
+  // ⚠️ Demo only - use wallet integration in production
+  privateKey: import.meta.env.VITE_PRIVATE_KEY as Hex,
 };
 
 // ABI Definitions
@@ -87,6 +97,31 @@ const ERC20_ABI = {
   }]
 };
 
+// Add warning UI component
+function SecurityWarning() {
+  return (
+    <div style={{
+      backgroundColor: '#fff3cd',
+      color: '#856404',
+      padding: '1rem',
+      borderRadius: '4px',
+      marginBottom: '1rem',
+      border: '1px solid #ffeeba'
+    }}>
+      <h4 style={{ margin: '0 0 0.5rem 0' }}>⚠️ Demo Configuration</h4>
+      <p style={{ margin: '0' }}>
+        This example uses a demo account for illustration. In production:
+        <div style={{ margin: '0.5rem 0 0 0', paddingLeft: '1rem' }}>
+          <div>Private key secured on backend API route</div>
+          <div>Frontend only handles public data</div>
+          <div>Environment variable separation</div>
+          <div>Server-side transaction signing</div>
+        </div>
+      </p>
+    </div>
+  );
+}
+
 function Dashboard() {
   const { 
     sbcAppKit, 
@@ -100,7 +135,6 @@ function Dashboard() {
 
   const { 
     sendUserOperation, 
-    // estimateUserOperatestimateUserOperationion,
     isLoading, 
     isSuccess, 
     isError, 
@@ -123,15 +157,27 @@ function Dashboard() {
   const [targetAddress, setTargetAddress] = useState<string>('');
   const [addressError, setAddressError] = useState<string>('');
 
-  // State for gas estimation
-  // const [gasEstimate, setGasEstimate] = useState<any>(null);
-  // const [isEstimating, setIsEstimating] = useState(false);
-  // const [estimationError, setEstimationError] = useState<string | null>(null);
-
   // State for balances
   const [ownerBalances, setOwnerBalances] = useState<{eth: string | null, sbc: string | null}>({eth: null, sbc: null});
   const [smartAccountBalances, setSmartAccountBalances] = useState<{eth: string | null, sbc: string | null}>({eth: null, sbc: null});
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+  const [ownerAddress, setOwnerAddress] = useState<string | null>(null);
+
+  // Effect to fetch owner address when sbcAppKit changes
+  useEffect(() => {
+    const fetchOwnerAddress = async () => {
+      if (sbcAppKit) {
+        try {
+          const address = sbcAppKit.getOwnerAddress();
+          setOwnerAddress(address);
+        } catch (error) {
+          console.error('Failed to fetch owner address:', error);
+          setOwnerAddress(null);
+        }
+      }
+    };
+    fetchOwnerAddress();
+  }, [sbcAppKit]);
 
   // Function to fetch balances for a specific address
   const fetchBalancesForAddress = useCallback(async (address: string): Promise<{eth: string, sbc: string}> => {
@@ -396,86 +442,6 @@ function Dashboard() {
     }
   };
 
-  // Gas Estimation Functions
-  // To re-enable: Uncomment the gas estimation button and results UI sections below
-  
-  // // Helper function to estimate gas for simple transfer
-  // const estimateSimpleTransfer = async () => {
-  //   console.log('Estimating gas for simple transfer');
-  //   const transferData = createTransferCallData(targetAddress, TRANSFER_AMOUNT);
-    
-  //   return await estimateUserOperation({
-  //     to: SBC_TOKEN_ADDRESS,
-  //     data: transferData,
-  //     value: '0'
-  //   });
-  // };
-
-  // // Helper function to estimate gas for permit transfer
-  // const estimatePermitTransfer = async () => {
-  //   console.log('Estimating gas for permit + transferFrom + transfer multi-call');
-    
-  //   const deadline = Math.floor(Date.now() / 1000) + PERMIT_DURATION_SECONDS;
-  //   const { sig } = await createPermitSignature(TRANSFER_AMOUNT, deadline);
-  //   const ownerAddress = sbcAppKit!.getOwnerAddress();
-  //   const smartAccountAddress = account!.address;
-
-  //   const permitData = createPermitCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT, deadline, sig);
-  //   const transferFromData = createTransferFromCallData(ownerAddress, smartAccountAddress, TRANSFER_AMOUNT);
-  //   const finalTransferData = createTransferCallData(targetAddress, TRANSFER_AMOUNT);
-
-  //   return await estimateUserOperation({
-  //     calls: [
-  //       { to: SBC_TOKEN_ADDRESS, data: permitData, value: 0n },
-  //       { to: SBC_TOKEN_ADDRESS, data: transferFromData, value: 0n },
-  //       { to: SBC_TOKEN_ADDRESS, data: finalTransferData, value: 0n }
-  //     ]
-  //   });
-  // };
-
-  // const handleEstimateGas = async () => {
-  //   if (!sbcAppKit) return;
-
-  //   setIsEstimating(true);
-  //   setEstimationError(null);
-  //   setGasEstimate(null);
-
-  //   try {
-  //     // Get current balances
-  //     const smartAccountSbcBalance = smartAccountBalances.sbc ? BigInt(smartAccountBalances.sbc) : 0n;
-  //     const ownerSbcBalance = ownerBalances.sbc ? BigInt(ownerBalances.sbc) : 0n;
-
-  //     let estimate;
-
-  //     // Determine estimation strategy based on available balances
-  //     if (smartAccountSbcBalance >= TRANSFER_AMOUNT) {
-  //       // Smart account has sufficient balance - estimate simple transfer
-  //       estimate = await estimateSimpleTransfer();
-  //     } else if (ownerSbcBalance >= TRANSFER_AMOUNT) {
-  //       // Owner has sufficient balance - estimate permit transfer
-  //       estimate = await estimatePermitTransfer();
-  //     } else {
-  //       // Neither account has sufficient balance
-  //       const smartAccountSbc = (Number(smartAccountSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
-  //       const ownerSbc = (Number(ownerSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
-  //       const requiredSbc = (Number(TRANSFER_AMOUNT) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
-        
-  //       throw new Error(
-  //         `Insufficient SBC balance. Need ${requiredSbc} SBC. ` +
-  //         `Smart account has ${smartAccountSbc} SBC, Owner has ${ownerSbc} SBC.`
-  //       );
-  //     }
-
-  //     console.log('Gas estimate:', estimate);
-  //     setGasEstimate(estimate);
-  //   } catch (error) {
-  //     console.error('Failed to estimate gas:', error);
-  //     setEstimationError(error instanceof Error ? error.message : 'Unknown error');
-  //   } finally {
-  //     setIsEstimating(false);
-  //   }
-  // };
-
   if (error) {
     return (
       <div className="error">
@@ -498,6 +464,8 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <h1>🏦 SBC Account Abstraction Demo</h1>
+      
+      <SecurityWarning />
 
       {/* Account Info */}
       <div className="card">
@@ -514,7 +482,7 @@ function Dashboard() {
             {/* Owner Section */}
             <div style={{marginBottom: '20px', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px'}}>
               <h4 style={{margin: '0 0 8px 0'}}>👤 Owner (EOA)</h4>
-              <p style={{margin: '4px 0'}}><strong>Address:</strong> {sbcAppKit?.getOwnerAddress()}</p>
+              <p style={{margin: '4px 0'}}><strong>Address:</strong> {ownerAddress || 'Loading...'}</p>
               <p style={{margin: '4px 0'}}><strong>ETH Balance:</strong> {
                 isLoadingBalances ? 'Loading...' : formatEthBalance(ownerBalances.eth)
               } ETH</p>
@@ -682,47 +650,6 @@ function Dashboard() {
           </div>
         )}
       </div>
-
-      {/* Gas Estimation Results - Hidden for demo but functional
-          Uncomment to show gas estimation results:
-          
-      {(gasEstimate || estimationError || isEstimating) && (
-        <div className="card">
-          <h3>⛽ Gas Estimation</h3>
-          
-          {isEstimating && (
-            <div className="status loading">
-              <p>🔄 Estimating gas costs...</p>
-            </div>
-          )}
-
-          {estimationError && (
-            <div className="status error">
-              <p>❌ Gas estimation failed:</p>
-              <p>{estimationError}</p>
-              <button onClick={() => setEstimationError(null)}>Clear</button>
-            </div>
-          )}
-
-          {gasEstimate && (
-            <div className="status success">
-              <p>✅ Gas estimation successful!</p>
-              <div style={{ textAlign: 'left', marginTop: '12px' }}>
-                <p><strong>Call Gas Limit:</strong> {gasEstimate.callGasLimit?.toString() || 'N/A'}</p>
-                <p><strong>Verification Gas Limit:</strong> {gasEstimate.verificationGasLimit?.toString() || 'N/A'}</p>
-                <p><strong>Pre-verification Gas:</strong> {gasEstimate.preVerificationGas?.toString() || 'N/A'}</p>
-                <p><strong>Max Fee Per Gas:</strong> {gasEstimate.maxFeePerGas?.toString() || 'N/A'} wei</p>
-                <p><strong>Max Priority Fee Per Gas:</strong> {gasEstimate.maxPriorityFeePerGas?.toString() || 'N/A'} wei</p>
-                {gasEstimate.paymasterAndData && (
-                  <p><strong>Paymaster:</strong> {gasEstimate.paymasterAndData.slice(0, 42)}...</p>
-                )}
-              </div>
-              <button onClick={() => setGasEstimate(null)} style={{ marginTop: '12px' }}>Clear</button>
-            </div>
-          )}
-        </div>
-      )}
-      */}
 
       {/* Debug Info */}
       {config.debug && (

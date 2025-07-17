@@ -244,10 +244,11 @@ REACT_APP_SBC_API_KEY=your_api_key_here
 # Optional
 REACT_APP_SBC_DEBUG=true
 ```
+
 ## Examples
 
 - [Complete React App](../../examples/react-app/) - Full example with UI
 
 ## License
 
-MIT 
+MIT

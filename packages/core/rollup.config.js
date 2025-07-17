@@ -30,13 +30,13 @@ export default [
       {
         file: packageJson.main,
         format: 'cjs',
-        sourcemap: true,
+        sourcemap: false, // Disabled to prevent warnings in consuming apps
         inlineDynamicImports: true,
       },
       {
         file: packageJson.module,
         format: 'esm',
-        sourcemap: true,
+        sourcemap: false, // Disabled to prevent warnings in consuming apps
         inlineDynamicImports: true,
       },
     ],
