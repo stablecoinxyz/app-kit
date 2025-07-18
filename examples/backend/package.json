@@ -11,7 +11,7 @@
     "install:local": "pnpm link ../../packages/core"
   },
   "dependencies": {
-    "@stablecoin.xyz/core": "@latest",
+    "@stablecoin.xyz/core": "latest",
     "dotenv": "^16.0.0",
     "viem": "^2.7.13"
   },

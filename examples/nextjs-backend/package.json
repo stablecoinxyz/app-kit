@@ -10,8 +10,8 @@
     "install:local": "pnpm link ../../packages/core ../../packages/react"
   },
   "dependencies": {
-    "@stablecoin.xyz/core": "@latest",
-    "@stablecoin.xyz/react": "@latest",
+    "@stablecoin.xyz/core": "latest",
+    "@stablecoin.xyz/react": "latest",
     "@types/node": "20.11.24",
     "@types/react": "18.2.61",
     "@types/react-dom": "18.2.19",
