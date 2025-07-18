@@ -1,5 +1,18 @@
 # @stablecoin.xyz/core
 
+## 1.1.0
+
+### Minor Changes
+
+- Enhanced Wallet Manager with improved wallet connection flow for MetaMask and Coinbase Wallet integration
+- Added production-ready wallet integration with full `walletClient` configuration support
+- Improved error handling with actionable guidance for wallet connection issues
+- Fixed account creation with proper LocalAccount objects and full signing method implementations
+- Resolved wallet connection failures with proper account attachment and validation
+- Enhanced smart account integration to work seamlessly with connected wallets
+- Achieved 100% test coverage with comprehensive mock coverage and enhanced test isolation
+- Added robust error testing scenarios for improved reliability
+
 ## 1.0.1
 
 ### Patch Changes

@@ -32,7 +32,7 @@ export class WalletManager {
         type: 'metamask',
         name: 'MetaMask',
         available: !!isMetaMask,
-        icon: 'https://docs.metamask.io/img/metamask-fox.svg',
+        icon: 'https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg',
         provider: isMetaMask ? window.ethereum : undefined,
       });
 
@@ -43,7 +43,7 @@ export class WalletManager {
           type: 'coinbase',
           name: 'Coinbase Wallet',
           available: true,
-          icon: 'https://wallet-api-production.s3.amazonaws.com/uploads/tokens/eth_288.png',
+          icon: 'https://gist.githubusercontent.com/taycaldwell/2291907115c0bb5589bc346661435007/raw/280eafdc84cb80ed0c60e36b4d0c563f6dca6b3e/cbw.svg',
           provider: window.ethereum,
         });
       }
@@ -55,7 +55,7 @@ export class WalletManager {
         type: 'coinbase',
         name: 'Coinbase Wallet',
         available: true,
-        icon: 'https://wallet-api-production.s3.amazonaws.com/uploads/tokens/eth_288.png',
+        icon: 'https://gist.githubusercontent.com/taycaldwell/2291907115c0bb5589bc346661435007/raw/280eafdc84cb80ed0c60e36b4d0c563f6dca6b3e/cbw.svg',
         provider: window.coinbaseWalletExtension,
       });
     }
@@ -65,7 +65,7 @@ export class WalletManager {
       type: 'walletconnect',
       name: 'WalletConnect',
       available: true,
-      icon: 'https://registry.walletconnect.com/api/v1/logo/sm/walletconnect.png',
+      icon: 'https://registry.walletconnect.com/logo/black/128/image/png',
       provider: null, // WalletConnect uses different connection pattern
     });
 

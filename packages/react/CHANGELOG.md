@@ -1,5 +1,19 @@
 # @stablecoin.xyz/react
 
+## 0.3.0
+
+### Minor Changes
+
+- Enhanced `useSbcApp` hook to gracefully handle "no wallet connected" scenarios
+- Improved error states and loading management in React hooks for better user experience
+- Updated hooks to work seamlessly with the enhanced wallet manager from core package
+- All React tests now passing with proper mock structures and enhanced test coverage
+- Improved hook testing for wallet connection scenarios and error handling
+
+### Patch Changes
+
+- Updated @stablecoin.xyz/core@1.1.0
+
 ## 0.2.1
 
 ### Patch Changes

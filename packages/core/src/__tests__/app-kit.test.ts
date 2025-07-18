@@ -372,12 +372,38 @@ describe('SbcAppKit', () => {
       kit = new SbcAppKit(config);
     });
 
-    it('should return owner address', () => {
+    it('should return owner address when wallet is connected', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      // Connect wallet first
+      await kit.connectWallet('metamask');
       const address = kit.getOwnerAddress();
       expect(address).toBe('0x1234567890123456789012345678901234567890');
     });
 
-    it('should get account information', async () => {
+    it('should throw error when getting owner address without wallet', () => {
+      expect(() => kit.getOwnerAddress()).toThrow('No wallet connected. Call connectWallet() to connect a wallet first.');
+    });
+
+    it('should get account information when wallet is connected', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      // Connect wallet first
+      await kit.connectWallet('metamask');
       const account = await kit.getAccount();
       
       expect(account.address).toBe('0x9876543210987654321098765432109876543210');
@@ -385,7 +411,20 @@ describe('SbcAppKit', () => {
       expect(account.nonce).toBe(5);
     });
 
-    it('should handle undeployed account', async () => {
+    it('should throw error when getting account without wallet', async () => {
+      await expect(kit.getAccount()).rejects.toThrow('No wallet connected. Call connectWallet() to connect a wallet first.');
+    });
+
+    it('should handle undeployed account when wallet is connected', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
       // Mock bytecode as empty for undeployed account
       const { createPublicClient } = require('viem');
       createPublicClient.mockReturnValueOnce({
@@ -406,6 +445,8 @@ describe('SbcAppKit', () => {
       };
       
       const testKit = new SbcAppKit(config);
+      // Connect wallet first
+      await testKit.connectWallet('metamask');
       const account = await testKit.getAccount();
       
       expect(account.isDeployed).toBe(false);
@@ -413,38 +454,41 @@ describe('SbcAppKit', () => {
     });
 
     it('should throw error when wallet has no account', () => {
-      // Mock wallet client with no account
-      const { createWalletClient } = require('viem');
-      const originalMock = createWalletClient.getMockImplementation();
-      
-      createWalletClient.mockImplementationOnce(() => ({
-        account: null
-      }));
+      // Create a wallet client with no account
+      const mockWalletClient = {
+        account: null,
+        chain: { id: 8453 }
+      };
 
       const config: SbcAppKitConfig = {
         apiKey: 'sbc-test123456',
-        chain: base
+        chain: base,
+        walletClient: mockWalletClient as any
       };
 
-      expect(() => new SbcAppKit(config)).toThrow('No account attached to wallet client');
-      
-      // Restore original mock
-      createWalletClient.mockImplementation(originalMock);
+      expect(() => new SbcAppKit(config)).toThrow('Provided wallet client must have an account attached');
     });
   });
 
   describe('User Operations', () => {
-    let kit: SbcAppKit;
+    it('should estimate user operation gas', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
 
-    beforeEach(() => {
       const config: SbcAppKitConfig = {
         apiKey: 'sbc-test123456',
         chain: baseSepolia
       };
-      kit = new SbcAppKit(config);
-    });
-
-    it('should estimate user operation gas', async () => {
+      const kit = new SbcAppKit(config);
+      
+      // Connect wallet first
+      await kit.connectWallet('metamask');
       const params = {
         to: '0x742d35Cc6641C4532B4d4c7B4C0D1C3d4e5f6789' as const,
         data: '0x' as const,
@@ -467,6 +511,24 @@ describe('SbcAppKit', () => {
     });
 
     it('should send user operation', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: baseSepolia
+      };
+      const kit = new SbcAppKit(config);
+      
+      // Connect wallet first
+      await kit.connectWallet('metamask');
+
       const params = {
         to: '0x742d35Cc6641C4532B4d4c7B4C0D1C3d4e5f6789' as const,
         data: '0xa9059cbb000000000000000000000000742d35cc6641c4532b4d4c7b4c0d1c3d4e5f678900000000000000000000000000000000000000000000000000000000000f4240' as const,
@@ -484,6 +546,24 @@ describe('SbcAppKit', () => {
     });
 
     it('should handle user operation with value', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: baseSepolia
+      };
+      const kit = new SbcAppKit(config);
+      
+      // Connect wallet first
+      await kit.connectWallet('metamask');
+
       const params = {
         to: '0x742d35Cc6641C4532B4d4c7B4C0D1C3d4e5f6789' as const,
         data: '0x' as const,
@@ -501,6 +581,24 @@ describe('SbcAppKit', () => {
     });
 
     it('should handle calls array format', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: baseSepolia
+      };
+      const kit = new SbcAppKit(config);
+      
+      // Connect wallet first
+      await kit.connectWallet('metamask');
+
       const params = {
         calls: [
           {
@@ -522,6 +620,24 @@ describe('SbcAppKit', () => {
     });
 
     it('should validate empty calls array', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: baseSepolia
+      };
+      const kit = new SbcAppKit(config);
+      
+      // Connect wallet first
+      await kit.connectWallet('metamask');
+
       const params = {
         calls: [] // Empty array should throw
       };
@@ -530,6 +646,15 @@ describe('SbcAppKit', () => {
     });
 
     it('should handle permissionless client errors', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
       const { createSmartAccountClient } = require('permissionless');
       createSmartAccountClient.mockReturnValueOnce({
         account: {
@@ -547,6 +672,9 @@ describe('SbcAppKit', () => {
         chain: base
       };
       const testKit = new SbcAppKit(config);
+      
+      // Connect wallet first
+      await testKit.connectWallet('metamask');
 
       const params = {
         to: '0x742d35Cc6641C4532B4d4c7B4C0D1C3d4e5f6789' as const,
@@ -560,6 +688,15 @@ describe('SbcAppKit', () => {
 
   describe('Error Handling', () => {
     it('should handle smart account initialization errors', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
       const { toKernelSmartAccount } = require('permissionless/accounts');
       toKernelSmartAccount.mockRejectedValueOnce(new Error('Kernel initialization failed'));
 
@@ -568,11 +705,21 @@ describe('SbcAppKit', () => {
         chain: base
       };
       const kit = new SbcAppKit(config);
-
-      await expect(kit.getAccount()).rejects.toThrow('Kernel initialization failed');
+      
+      // The error should be thrown during wallet connection
+      await expect(kit.connectWallet('metamask')).rejects.toThrow('Failed to initialize smart account: Kernel initialization failed');
     });
 
     it('should handle gas estimation errors', async () => {
+      // Mock MetaMask
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
       const { createSmartAccountClient } = require('permissionless');
       createSmartAccountClient.mockReturnValueOnce({
         account: {
@@ -582,7 +729,13 @@ describe('SbcAppKit', () => {
         sendUserOperation: jest.fn(),
         waitForUserOperationReceipt: jest.fn(),
         prepareUserOperation: jest.fn().mockRejectedValue(new Error('Gas estimation failed')),
-        estimateUserOperationGas: jest.fn(),
+        estimateUserOperationGas: jest.fn().mockResolvedValue({
+          preVerificationGas: 50000n,
+          verificationGasLimit: 100000n,
+          callGasLimit: 150000n,
+          paymasterVerificationGasLimit: 25000n,
+          paymasterPostOpGasLimit: 25000n,
+        }),
       });
 
       const config: SbcAppKitConfig = {
@@ -590,6 +743,8 @@ describe('SbcAppKit', () => {
         chain: base
       };
       const kit = new SbcAppKit(config);
+      // Connect wallet first
+      await kit.connectWallet('metamask');
 
       const params = {
         to: '0x742d35Cc6641C4532B4d4c7B4C0D1C3d4e5f6789' as const,

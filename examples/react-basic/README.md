@@ -1,55 +1,27 @@
-# SBC React Basic Example
+# React Basic Example
 
-A minimal React application demonstrating SBC Account Abstraction integration.
+Simple React demo with SBC Account Abstraction.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Clone and setup
-git clone https://github.com/stablecoinxyz/app-kit.git
-cd app-kit/examples/react-basic
+cd examples/react-basic
 npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+## Features
 
-## 📦 What's Included
+- Basic smart account setup
+- Send ETH and SBC tokens
+- Demo account (not production-safe)
 
-- ✅ Basic smart account creation
-- ✅ Balance checking (ETH & SBC tokens)
-- ✅ Gasless transactions via paymaster
-- ✅ Transaction status monitoring
-- ✅ TypeScript support
+## Environment
 
-## 🛠️ Development
-
-### Using Published Packages (Default)
-```bash
-npm install     # Uses @stablecoin.xyz/core@^1.0.1
-npm run dev
+```env
+VITE_SBC_API_KEY=your_api_key
 ```
 
-### Using Local Development Packages
-```bash
-npm run dev:local  # Auto-links to local workspace packages
-```
+## Security
 
-## 🏗️ Key Components
-
-- **SbcProvider**: React context for account abstraction
-- **useSbcApp**: Hook for smart account operations
-- **useUserOperation**: Hook for transaction management
-
-## 📚 Learn More
-
-- [SBC App Kit Documentation](https://github.com/stablecoinxyz/app-kit)
-- [Account Abstraction Guide](https://github.com/stablecoinxyz/app-kit#readme)
-- [API Reference](https://github.com/stablecoinxyz/app-kit/tree/main/packages)
-
-## 🎯 Next Steps
-
-1. Copy this example to your project
-2. Add your own components
-3. Deploy to production
-4. Scale with confidence!
+⚠️ Demo only - uses generated private key

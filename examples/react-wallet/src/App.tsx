@@ -45,20 +45,95 @@ const permitAbi = [
 
 function WalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
   const { ownerAddress } = useSbcApp();
+  const [balances, setBalances] = useState<{ eth: string | null; sbc: string | null }>({ eth: null, sbc: null });
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+
+  // Fetch balances when wallet connects
+  useEffect(() => {
+    if (!ownerAddress) return;
+
+    const fetchBalances = async () => {
+      setIsLoadingBalances(true);
+      try {
+        // Fetch ETH and SBC balances in parallel
+        const [ethBalance, sbcBalance] = await Promise.all([
+          publicClient.getBalance({ address: ownerAddress as `0x${string}` }),
+          publicClient.readContract({
+            address: SBC_TOKEN_ADDRESS as `0x${string}`,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [ownerAddress as `0x${string}`],
+          }),
+        ]);
+
+        setBalances({
+          eth: ethBalance.toString(),
+          sbc: sbcBalance.toString(),
+        });
+      } catch (error) {
+        console.error('Failed to fetch wallet balances:', error);
+        setBalances({ eth: '0', sbc: '0' });
+      } finally {
+        setIsLoadingBalances(false);
+      }
+    };
+
+    fetchBalances();
+  }, [ownerAddress]);
+
+  // Helper functions for formatting
+  const formatEthBalance = (balance: string | null): string => {
+    if (!balance) return '0.0000';
+    try {
+      return (Number(balance) / 1e18).toFixed(4);
+    } catch {
+      return '0.0000';
+    }
+  };
+
+  const formatSbcBalance = (balance: string | null): string => {
+    if (!balance) return '0.00';
+    try {
+      return (Number(balance) / Math.pow(10, SBC_DECIMALS)).toFixed(2);
+    } catch {
+      return '0.00';
+    }
+  };
+
   if (!ownerAddress) return null;
+
   return (
-    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
-      <div>
-        <h3 className="font-semibold text-green-800 mb-1">Wallet Connected</h3>
-        <p className="text-xs text-green-600 font-mono break-all mb-1">EOA: {ownerAddress}</p>
-        <p className="text-xs text-green-600">Connected to MetaMask (or Wallet Extension detected)</p>
+    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <h3 className="font-semibold text-green-800 mb-1">✅ Wallet Connected</h3>
+          <p className="text-xs text-green-600 font-mono break-all mb-2">EOA: {ownerAddress}</p>
+          <p className="text-xs text-green-600 mb-2">Connected to MetaMask (or Wallet Extension detected)</p>
+          
+          {/* Balance Section */}
+          <div className="mt-2 pt-2 border-t border-green-200">
+            <p className="text-xs font-medium text-green-700 mb-1">Wallet Balances:</p>
+            {isLoadingBalances ? (
+              <p className="text-xs text-green-600">Loading balances...</p>
+            ) : (
+              <div className="flex gap-4">
+                <span className="text-xs text-green-600">
+                  <strong>ETH:</strong> {formatEthBalance(balances.eth)}
+                </span>
+                <span className="text-xs text-green-600">
+                  <strong>SBC:</strong> {formatSbcBalance(balances.sbc)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={onDisconnect}
+          className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-4"
+        >
+          Disconnect Wallet
+        </button>
       </div>
-      <button
-        onClick={onDisconnect}
-        className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-      >
-        Disconnect Wallet
-      </button>
     </div>
   );
 }
@@ -66,15 +141,78 @@ function WalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
 function SmartAccountInfo() {
   const { account, isInitialized, refreshAccount, isLoadingAccount } = useSbcApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [sbcBalance, setSbcBalance] = useState<string | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+
+  // Fetch SBC balance for smart account
+  useEffect(() => {
+    if (!account?.address) return;
+
+    const fetchSbcBalance = async () => {
+      setIsLoadingBalance(true);
+      try {
+        const balance = await publicClient.readContract({
+          address: SBC_TOKEN_ADDRESS as `0x${string}`,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [account.address as `0x${string}`],
+        });
+        setSbcBalance(balance.toString());
+      } catch (error) {
+        console.error('Failed to fetch SBC balance for smart account:', error);
+        setSbcBalance('0');
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+
+    fetchSbcBalance();
+  }, [account?.address]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
       await refreshAccount?.();
+      // Refresh SBC balance as well
+      if (account?.address) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await publicClient.readContract({
+            address: SBC_TOKEN_ADDRESS as `0x${string}`,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [account.address as `0x${string}`],
+          });
+          setSbcBalance(balance.toString());
+        } catch (error) {
+          console.error('Failed to refresh SBC balance:', error);
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      }
     } catch (error) {
       // error handled below
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  // Helper functions for formatting
+  const formatEthBalance = (balance: string | null): string => {
+    if (!balance) return '0.0000';
+    try {
+      return (Number(balance) / 1e18).toFixed(4);
+    } catch {
+      return '0.0000';
+    }
+  };
+
+  const formatSbcBalance = (balance: string | null): string => {
+    if (!balance) return '0.00';
+    try {
+      return (Number(balance) / Math.pow(10, SBC_DECIMALS)).toFixed(2);
+    } catch {
+      return '0.00';
     }
   };
 
@@ -107,9 +245,24 @@ function SmartAccountInfo() {
           <span className="text-purple-700">Nonce:</span>
           <span className="text-purple-600">{account.nonce}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-purple-700">Balance:</span>
-          <span className="text-purple-600">{account.balance ? `${(Number(account.balance) / 1e18).toFixed(4)} ETH` : '0 ETH'}</span>
+        
+        {/* Enhanced Balance Section */}
+        <div className="pt-2 border-t border-purple-200">
+          <p className="text-xs font-medium text-purple-700 mb-2">Smart Account Balances:</p>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-purple-700">ETH:</span>
+              <span className="text-purple-600 font-mono text-xs">
+                {formatEthBalance(account.balance)} ETH
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-purple-700">SBC:</span>
+              <span className="text-purple-600 font-mono text-xs">
+                {isLoadingBalance ? 'Loading...' : `${formatSbcBalance(sbcBalance)} SBC`}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

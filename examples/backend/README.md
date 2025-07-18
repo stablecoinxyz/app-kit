@@ -1,36 +1,24 @@
-# SBC App Kit Backend Examples
+# Backend Example
+
+Node.js backend integration with SBC Account Abstraction.
 
 ## Quick Start
 
-### Option 1: Using .env file (Recommended)
-
 ```bash
+cd examples/backend
 npm install
-
-# Create .env file
-cat > .env << EOF
-SBC_API_KEY=sbc-your-api-key-here
-PRIVATE_KEY=0xYourPrivateKeyHere
-SBC_DEBUG=true
-NODE_ENV=development
-EOF
-
-npm run start
+npm run basic
 ```
 
-### Option 2: Using environment variables
+## Features
 
-```bash
-npm install
-export SBC_API_KEY="sbc-your-api-key-here"
-npm run start
+- Server-side smart accounts
+- Backend transaction signing
+- Production logging
+
+## Environment
+
+```env
+SBC_API_KEY=your_api_key
+PRIVATE_KEY=0x...
 ```
-
-### Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SBC_API_KEY` | ✅ | Your SBC API key from the dashboard |
-| `PRIVATE_KEY` | ❌ | Custom private key (auto-generated if not provided) |
-| `SBC_DEBUG` | ❌ | Enable debug logging (`true`/`false`) |
-| `NODE_ENV` | ❌ | Environment identifier for logging |

@@ -4,8 +4,8 @@ import type { WalletManagerConfig } from '../types';
 
 // Mock viem
 jest.mock('viem', () => ({
-  createWalletClient: jest.fn(() => ({
-    account: null,
+  createWalletClient: jest.fn(({ account }) => ({
+    account: account || null,
     chain: { id: 84532 }
   })),
   custom: jest.fn(),
@@ -252,7 +252,7 @@ describe('WalletManager', () => {
         }
       };
 
-      await expect(walletManager.connectWallet('metamask')).rejects.toThrow('Failed to connect to MetaMask');
+      await expect(walletManager.connectWallet('metamask')).rejects.toThrow('Failed to connect wallet');
     });
 
     it('should handle missing MetaMask', async () => {
@@ -305,10 +305,12 @@ describe('WalletManager', () => {
       
       expect(result.walletClient).toBeDefined();
       expect(result.walletClient.account).toBeDefined();
-      expect(result.walletClient.account?.address).toBe(mockAccounts[0]);
-      expect(typeof result.walletClient.account?.signMessage).toBe('function');
-      expect(typeof result.walletClient.account?.signTransaction).toBe('function');
-      expect(typeof result.walletClient.account?.signTypedData).toBe('function');
+      
+      // Check that account has address (should be directly on account object)
+      expect(result.walletClient.account!.address).toBe(mockAccounts[0]);
+      expect(typeof result.walletClient.account!.signMessage).toBe('function');
+      expect(typeof result.walletClient.account!.signTransaction).toBe('function');
+      expect(typeof result.walletClient.account!.signTypedData).toBe('function');
     });
   });
 }); 
