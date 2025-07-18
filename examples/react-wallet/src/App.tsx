@@ -1,201 +1,85 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPublicClient, http, getAddress, parseSignature, WalletClient, PublicClient, Hex } from 'viem';
 import { baseSepolia } from 'viem/chains';
-import { 
-  SbcProvider, 
-  useSbcApp,
-  useUserOperation
-} from '@stablecoin.xyz/react';
-import type { SbcAppKitConfig } from '@stablecoin.xyz/core';
-import { parseUnits, encodeFunctionData, erc20Abi, createWalletClient, custom, WalletClient } from 'viem';
-import { toAccount } from 'viem/accounts';
+import { SbcProvider, WalletButton, useSbcApp, useUserOperation } from '@stablecoin.xyz/react';
+import { parseUnits, encodeFunctionData, erc20Abi } from 'viem';
 import './index.css';
 
-// Constants
 const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
 const SBC_DECIMALS = 6;
 
-interface WalletState {
-  client: WalletClient | null;
-  address: string | null;
-  isConnected: boolean;
-}
+const publicClient = createPublicClient({ chain: baseSepolia, transport: http() });
 
-// Wallet Connection Component
-const WalletConnection = ({ onWalletChange }: { onWalletChange: (wallet: WalletState) => void }) => {
-  const [wallet, setWallet] = useState<WalletState>({
-    client: null,
-    address: null,
-    isConnected: false
-  });
-
-  const connectWallet = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ 
-          method: 'eth_requestAccounts' 
-        });
-
-        if (accounts.length > 0) {
-          // Get the account from window.ethereum
-          const [address] = accounts;
-          
-          // Try approach without setting account in constructor
-          const walletClient = createWalletClient({
-            chain: baseSepolia,
-            transport: custom(window.ethereum),
-          });
-
-                     // Use viem's toAccount utility for proper LocalAccount creation
-           try {
-             console.log('Creating account with toAccount utility');
-             const account = toAccount({
-               address: address as `0x${string}`,
-               async signMessage({ message }) {
-                 return await window.ethereum!.request({
-                   method: 'personal_sign',
-                   params: [message, address],
-                 });
-               },
-               async signTransaction(transaction) {
-                 // For MetaMask, we don't need to implement this as the provider handles it
-                 throw new Error('Transaction signing handled by MetaMask provider');
-               },
-               async signTypedData(typedData) {
-                 return await window.ethereum!.request({
-                   method: 'eth_signTypedData_v4',
-                   params: [address, JSON.stringify(typedData)],
-                 });
-               },
-             });
-             
-             (walletClient as any).account = account;
-             console.log('Account created with toAccount:', account);
-           } catch (error) {
-             console.log('Failed to create account with toAccount:', error);
-             
-             // Ultimate fallback - create the simplest possible account object
-             (walletClient as any).account = {
-               address: address as `0x${string}`,
-               type: 'json-rpc' as const,
-             };
-           }
-
-          console.log('walletClient.account', walletClient.account);
-          console.log('walletClient.account structure:', JSON.stringify(walletClient.account, null, 2));
-
-          const newWallet = {
-            client: walletClient,
-            address: address,
-            isConnected: true
-          };
-
-          setWallet(newWallet);
-          onWalletChange(newWallet);
-        }
-      } catch (error) {
-        console.error('Failed to connect wallet:', error);
-      }
-    }
-  };
-
-  const disconnectWallet = () => {
-    const newWallet = {
-      client: null,
-      address: null,
-      isConnected: false
-    };
-    setWallet(newWallet);
-    onWalletChange(newWallet);
-  };
-
-  if (!wallet.isConnected) {
-    return (
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect Your Wallet</h3>
-        <p className="text-sm text-blue-600 mb-3">
-          Connect your wallet to create a smart account with your wallet as the signer
-        </p>
-        <button
-          onClick={connectWallet}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          {typeof window.ethereum !== 'undefined' ? 'Connect MetaMask' : 'Install MetaMask'}
-        </button>
-      </div>
-    );
+const erc20PermitAbi = [
+  ...erc20Abi,
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" }
+    ],
+    "name": "nonces",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
+];
 
+const permitAbi = [
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "address", "name": "spender", "type": "address" },
+      { "internalType": "uint256", "name": "value", "type": "uint256" },
+      { "internalType": "uint256", "name": "deadline", "type": "uint256" },
+      { "internalType": "uint8", "name": "v", "type": "uint8" },
+      { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+      { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+    ],
+    "name": "permit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+function WalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
+  const { ownerAddress } = useSbcApp();
+  if (!ownerAddress) return null;
   return (
-    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-semibold text-green-800 mb-2">✅ Wallet Connected</h3>
-          <p className="text-xs text-green-600 font-mono break-all mb-1">{wallet.address}</p>
-          <p className="text-xs text-green-600">Chain: Base Sepolia • Ready to sign transactions</p>
-        </div>
-        <button
-          onClick={disconnectWallet}
-          className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-        >
-          Disconnect
-        </button>
+    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
+      <div>
+        <h3 className="font-semibold text-green-800 mb-1">Wallet Connected</h3>
+        <p className="text-xs text-green-600 font-mono break-all mb-1">EOA: {ownerAddress}</p>
+        <p className="text-xs text-green-600">Connected to MetaMask (or Wallet Extension detected)</p>
       </div>
+      <button
+        onClick={onDisconnect}
+        className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+      >
+        Disconnect Wallet
+      </button>
     </div>
   );
-};
+}
 
-// Smart Account Info Component  
-const SmartAccountInfo = () => {
-  const { account, isInitialized, refreshAccount, isLoadingAccount, accountError } = useSbcApp();
+function SmartAccountInfo() {
+  const { account, isInitialized, refreshAccount, isLoadingAccount } = useSbcApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Debug logging
-  console.log('SmartAccountInfo render:', {
-    isInitialized,
-    hasAccount: !!account,
-    isLoadingAccount,
-    hasRefreshFunction: !!refreshAccount,
-    accountError: accountError?.message
-  });
-
   const handleRefresh = async () => {
-    console.log('🔄 Manual refresh triggered');
     setIsRefreshing(true);
     try {
-      console.log('📡 Calling refreshAccount...');
       await refreshAccount?.();
-      console.log('✅ RefreshAccount completed');
     } catch (error) {
-      console.error('❌ Failed to refresh account:', error);
+      // error handled below
     } finally {
       setIsRefreshing(false);
     }
   };
 
   if (!isInitialized || !account) {
-    return (
-      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold text-yellow-800">⏳ Initializing Smart Account</h3>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing || isLoadingAccount}
-            className="text-xs bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-1"
-          >
-            {isRefreshing || isLoadingAccount ? '🔄 Refreshing...' : '🔄 Retry'}
-          </button>
-        </div>
-        <p className="text-sm text-yellow-700">
-          Creating your smart account with connected wallet as owner...
-        </p>
-        {isLoadingAccount && (
-          <p className="text-xs text-yellow-600 mt-2">Loading account information...</p>
-        )}
-        {accountError && (
-          <p className="text-xs text-red-600 mt-2">Error: {accountError.message}</p>
-        )}
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -212,7 +96,7 @@ const SmartAccountInfo = () => {
       </div>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-purple-700">Address:</span>
+          <span className="text-purple-700">Smart Account Address:</span>
           <span className="font-mono text-xs text-purple-600 break-all">{account.address}</span>
         </div>
         <div className="flex justify-between">
@@ -230,42 +114,69 @@ const SmartAccountInfo = () => {
       </div>
     </div>
   );
-};
+}
 
-// Transaction Form Component
-const TransactionForm = () => {
-  const { account } = useSbcApp();
+function TransactionForm() {
+  const { account, sbcAppKit } = useSbcApp();
   const { sendUserOperation, isLoading, isSuccess, isError, error: opError, data } = useUserOperation();
-  const [recipient, setRecipient] = useState('0x742d35Cc7d5C9532A0905c2A1f6C46E87c2A1234');
+  const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('1');
+  const { ownerAddress } = useSbcApp();
+  const walletClient = (sbcAppKit as any)?.walletClient;
+  const isFormValid = recipient && /^0x[a-fA-F0-9]{40}$/.test(recipient) && parseFloat(amount) > 0;
 
   const handleSendTransaction = async () => {
-    if (!account) return;
-
+    if (!account || !ownerAddress || !walletClient) return;
     try {
-      const transferCallData = encodeFunctionData({
-        abi: erc20Abi,
-        functionName: 'transfer',
-        args: [recipient as `0x${string}`, parseUnits(amount, SBC_DECIMALS)]
+      const ownerChecksum = getAddress(ownerAddress);
+      const spenderChecksum = getAddress(account.address);
+      const value = parseUnits(amount, SBC_DECIMALS);
+      const deadline = Math.floor(Date.now() / 1000) + 60 * 30; // 30 min
+      
+      const signature = await getPermitSignature({
+        publicClient: publicClient as PublicClient,
+        walletClient: walletClient as WalletClient,
+        owner: ownerChecksum,
+        spender: spenderChecksum,
+        value,
+        tokenAddress: SBC_TOKEN_ADDRESS,
+        chainId: baseSepolia.id,
+        deadline,
       });
 
-      // This will trigger the user's wallet to sign the transaction
+      if (!signature) {
+        console.error('Error signing permit transaction');
+        return;
+      }
+      const { r, s, v } = parseSignature(signature);
+      
+      const permitCallData = encodeFunctionData({
+        abi: permitAbi,
+        functionName: 'permit',
+        args: [ownerChecksum, spenderChecksum, value, deadline, v, r, s],
+      });
+      const transferFromCallData = encodeFunctionData({
+        abi: erc20PermitAbi,
+        functionName: 'transferFrom',
+        args: [ownerChecksum, recipient as `0x${string}`, value],
+      });
+      
       await sendUserOperation({
-        to: SBC_TOKEN_ADDRESS,
-        data: transferCallData,
-        value: '0'
+        calls: [
+          { to: SBC_TOKEN_ADDRESS as `0x${string}`, data: permitCallData },
+          { to: SBC_TOKEN_ADDRESS as `0x${string}`, data: transferFromCallData },
+        ],
       });
     } catch (err) {
       console.error('Transaction failed:', err);
     }
   };
 
-  const isFormValid = recipient && /^0x[a-fA-F0-9]{40}$/.test(recipient) && parseFloat(amount) > 0;
+  if (!account) return null;
 
   return (
     <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
       <h3 className="font-semibold text-gray-800 mb-4">💸 Send SBC Tokens</h3>
-      
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -286,7 +197,6 @@ const TransactionForm = () => {
             <p className="text-xs text-red-600 mt-1">Invalid Ethereum address</p>
           )}
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Amount (SBC)
@@ -301,7 +211,6 @@ const TransactionForm = () => {
             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-
         <div className="p-3 bg-gray-50 rounded">
           <div className="flex justify-between text-sm">
             <span>Amount:</span>
@@ -316,7 +225,6 @@ const TransactionForm = () => {
             <span>Your wallet will prompt to sign 🖊️</span>
           </div>
         </div>
-
         <button
           onClick={handleSendTransaction}
           disabled={!isFormValid || isLoading || !account}
@@ -324,7 +232,6 @@ const TransactionForm = () => {
         >
           {isLoading ? 'Waiting for signature...' : `Send ${amount} SBC`}
         </button>
-
         {isSuccess && data && (
           <div className="p-3 bg-green-50 border border-green-200 rounded">
             <p className="text-sm text-green-800 font-medium">✅ Transaction Successful!</p>
@@ -340,7 +247,6 @@ const TransactionForm = () => {
             </p>
           </div>
         )}
-
         {isError && opError && (
           <div className="p-3 bg-red-50 border border-red-200 rounded">
             <p className="text-sm text-red-800 font-medium">❌ Transaction Failed</p>
@@ -350,88 +256,157 @@ const TransactionForm = () => {
       </div>
     </div>
   );
-};
+}
 
-// Main App Component
 export default function App() {
-  const [wallet, setWallet] = useState<WalletState>({
-    client: null,
-    address: null,
-    isConnected: false
-  });
-
-  if (!import.meta.env.VITE_SBC_API_KEY) {
-    throw new Error('SBC_API_KEY is not set');
-  }
-
-  // Create SBC config with connected wallet client
-  const sbcConfig: SbcAppKitConfig | null = wallet.isConnected && wallet.client 
-    ? {
-        apiKey: import.meta.env.VITE_SBC_API_KEY,
-        chain: baseSepolia,
-        walletClient: wallet.client, // Use connected wallet as signer!
-        debug: true,
-      }
-    : null;
-
-  // Debug logging
-  console.log('App render - SBC Config:', {
-    walletConnected: wallet.isConnected,
-    hasWalletClient: !!wallet.client,
-    hasConfig: !!sbcConfig,
-    apiKey: sbcConfig?.apiKey ? 'present' : 'missing',
-    chain: sbcConfig?.chain?.name,
-    walletClientChain: wallet.client?.chain?.id,
-    walletClientAccount: wallet.client?.account,
-    walletClientAccountAddress: wallet.client?.account?.address,
-    walletClientAccountType: typeof wallet.client?.account
-  });
+  const sbcConfig = {
+    apiKey: import.meta.env.VITE_SBC_API_KEY,
+    chain: baseSepolia,
+    wallet: 'auto' as const,
+    debug: true,
+    walletOptions: { autoConnect: false },
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
-            <img src="/sbc-logo.png" alt="SBC Logo" width={36} height={36} />
-            SBC (Wallet Signer) Integration
-          </h1>
-          <p className="text-gray-600">
-            True decentralized smart accounts with user wallet signing
-          </p>
-        </div>
-
-        {/* Wallet Connection */}
-        <WalletConnection onWalletChange={setWallet} />
-
-        {/* Smart Account Management */}
-                 {wallet.isConnected && sbcConfig ? (
-           <SbcProvider 
-             config={sbcConfig}
-             onError={(error) => {
-               console.error('❌ SBC Provider Error:', error);
-             }}
-           >
-             <SmartAccountInfo />
-             <TransactionForm />
-           </SbcProvider>
-        ) : (
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-            <p className="text-gray-600">Connect your wallet to create a smart account</p>
+    <SbcProvider config={sbcConfig}>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
+              <img src="/sbc-logo.png" alt="SBC Logo" width={36} height={36} />
+              SBC (Wallet Signer) Integration
+            </h1>
+            <p className="text-gray-600">
+              True decentralized smart accounts with user wallet signing
+            </p>
           </div>
-        )}
-
-        {/* Footer */}
-        <div className="mt-8 text-center text-xs text-gray-500">
-          <p>
-            Powered by{' '}
-            <a href="https://stablecoin.xyz" className="text-blue-600 hover:underline">
-              SBC App Kit
-            </a>
-            {' '}• True wallet integration with user-controlled signing
-          </p>
+          <WalletConnectFlow />
+          <div className="mt-8 text-center text-xs text-gray-500">
+            <p>
+              Powered by{' '}
+              <a href="https://stablecoin.xyz" className="text-blue-600 hover:underline">
+                SBC App Kit
+              </a>
+              {' '}• True wallet integration with user-controlled signing
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </SbcProvider>
   );
-} 
+}
+
+function WalletConnectFlow() {
+  const { ownerAddress, disconnectWallet, refreshAccount } = useSbcApp();
+  const prevOwnerAddress = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (ownerAddress && !prevOwnerAddress.current) {
+      refreshAccount();
+    }
+    prevOwnerAddress.current = ownerAddress;
+  }, [ownerAddress, refreshAccount]);
+
+  if (!ownerAddress) {
+    return (
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect Your Wallet</h3>
+        <p className="text-sm text-blue-600 mb-3">
+          Connect your wallet to create a smart account with your wallet as the signer
+        </p>
+        <WalletButton walletType="auto" onConnect={refreshAccount}>Connect Wallet</WalletButton>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <WalletStatus onDisconnect={disconnectWallet} />
+      <SmartAccountInfo />
+      <TransactionForm />
+    </>
+  );
+}
+
+// Helper to get permit signature
+async function getPermitSignature({
+  publicClient,
+  walletClient,
+  owner,
+  spender,
+  value,
+  tokenAddress,
+  chainId,
+  deadline,
+}: {
+  publicClient: PublicClient;
+  walletClient: WalletClient;
+  owner: string;
+  spender: string;
+  value: bigint;
+  tokenAddress: string;
+  chainId: number;
+  deadline: number;
+}): Promise<`0x${string}` | null> {
+  try {
+    const ownerChecksum = getAddress(owner);
+    const spenderChecksum = getAddress(spender);
+    
+    const nonce = await publicClient.readContract({
+      address: tokenAddress as `0x${string}`,
+      abi: erc20PermitAbi,
+      functionName: 'nonces',
+      args: [ownerChecksum],
+    });
+    
+    const tokenName = await publicClient.readContract({
+      address: tokenAddress as `0x${string}`,
+      abi: erc20PermitAbi,
+      functionName: 'name',
+    });
+    
+    const domain = {
+      name: tokenName as string,
+      version: '1',
+      chainId: BigInt(chainId),
+      verifyingContract: SBC_TOKEN_ADDRESS as `0x${string}`,
+    };
+    
+    const types = {
+      EIP712Domain: [
+        { name: 'name', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'chainId', type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' },
+      ],
+      Permit: [
+        { name: 'owner', type: 'address' },
+        { name: 'spender', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' },
+      ],
+    } as const;
+    
+    const message = {
+      owner: ownerChecksum,
+      spender: spenderChecksum,
+      value: value,
+      nonce: nonce as bigint,
+      deadline: BigInt(deadline),
+    };
+    
+    const signature = await walletClient.signTypedData({
+      account: ownerChecksum,
+      domain,
+      types,
+      primaryType: 'Permit',
+      message,
+    });
+
+    return signature;
+  } catch (e) {
+    console.error('Error in getPermitSignature:', e);
+    return null;
+  }
+}

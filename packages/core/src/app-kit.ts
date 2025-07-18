@@ -1,5 +1,4 @@
 import { Address, PublicClient, WalletClient, http, LocalAccount } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
 import { entryPoint07Address, createPaymasterClient } from 'viem/account-abstraction';
 import { toKernelSmartAccount } from 'permissionless/accounts';
 import { createSmartAccountClient, SmartAccountClient } from 'permissionless';
@@ -10,7 +9,10 @@ import {
   CallParams,
   UserOperationResult,
   UserOperationEstimate,
-  AccountInfo
+  AccountInfo,
+  SupportedWalletType,
+  WalletConnectionResult,
+  DetectedWallet
 } from './types';
 import { Chain } from 'viem';
 import {
@@ -22,11 +24,12 @@ import {
   parseUserOperationError,
   getChainConfig
 } from './utils';
+import { WalletManager } from './wallet-manager';
 
 export class SbcAppKit {
   private config: SbcAppKitConfig;
   private publicClient: PublicClient;
-  private walletClient: WalletClient;
+  private walletClient: WalletClient | null;
   private smartAccountClient: SmartAccountClient | null = null;
   private aaProxyUrl: string;
   private debug: boolean;
@@ -45,27 +48,8 @@ export class SbcAppKit {
     // Initialize clients
     this.publicClient = createSbcPublicClient(config.chain, config.rpcUrl);
     
-    // Use provided wallet client or create one from private key
-    if (config.walletClient) {
-      this.walletClient = config.walletClient;
-      
-      // Validate that the provided wallet client has an account attached
-      if (!this.walletClient.account) {
-        throw new Error('Provided wallet client must have an account attached');
-      }
-      
-      // Validate that the wallet client is on the correct chain
-      if (this.walletClient.chain?.id !== config.chain.id) {
-        throw new Error(`Wallet client chain (${this.walletClient.chain?.id}) does not match config chain (${config.chain.id})`);
-      }
-    } else {
-      this.walletClient = createSbcWalletClient(config.chain, config.privateKey, config.rpcUrl);
-      
-      // Validate that wallet client has an account attached
-      if (!this.walletClient.account) {
-        throw new Error('No account attached to wallet client');
-      }
-    }
+    // Initialize wallet client, which can be null initially in browser environments
+    this.walletClient = this.initializeWalletClient(config);
     
     // Build Account Abstraction API URL
     this.aaProxyUrl = buildAaProxyUrl({
@@ -78,7 +62,7 @@ export class SbcAppKit {
     this.logInfo('sdk_initialized', {
       chain: config.chain.name,
       chainId: config.chain.id,
-      owner: this.walletClient.account.address,
+      owner: this.walletClient?.account?.address || 'pending_wallet_connection',
       hasCustomRpc: !!config.rpcUrl,
       isStaging: !!config.staging,
       loggingEnabled: !!config.logging?.enabled,
@@ -187,6 +171,92 @@ export class SbcAppKit {
   }
 
   /**
+   * Initializes the wallet client from the configuration.
+   * Returns null if no walletClient or privateKey is provided,
+   * indicating a browser environment where connection is deferred.
+   */
+  private initializeWalletClient(config: SbcAppKitConfig): WalletClient | null {
+    // Priority 1: Use provided wallet client
+    if (config.walletClient) {
+      if (!config.walletClient.account) {
+        this.logError('wallet_client_missing_account');
+        throw new Error('Provided wallet client must have an account attached');
+      }
+      
+      if (config.walletClient.chain?.id !== config.chain.id) {
+        this.logError('wallet_client_chain_mismatch');
+        throw new Error(`Wallet client chain (${config.walletClient.chain?.id}) does not match config chain (${config.chain.id})`);
+      }
+      
+      this.logInfo('using_provided_wallet_client');
+      return config.walletClient;
+    }
+
+    // Priority 2: Use private key (for backend or server-side rendering)
+    if (config.privateKey) {
+      this.logInfo('using_private_key_wallet');
+      return createSbcWalletClient(config.chain, config.privateKey, config.rpcUrl);
+    }
+
+    // For browser wallets, client is created upon connection. Defer initialization.
+    this.logInfo('wallet_client_deferred', {
+        message: 'Wallet client will be created upon user connection via connectWallet().'
+    });
+    return null;
+  }
+
+  /**
+   * Get available wallets in the current environment
+   */
+  async getAvailableWallets(): Promise<DetectedWallet[]> {
+    const walletManager = new WalletManager({
+      chain: this.config.chain,
+      options: this.config.walletOptions || {},
+      rpcUrl: this.config.rpcUrl,
+    });
+
+    return await walletManager.detectAvailableWallets();
+  }
+
+  /**
+   * Connect to a browser wallet using the new wallet integration system
+   */
+  async connectWallet(walletType?: SupportedWalletType): Promise<WalletConnectionResult> {
+    const walletManager = new WalletManager({
+      chain: this.config.chain,
+      options: this.config.walletOptions || {},
+      rpcUrl: this.config.rpcUrl,
+    });
+
+    const result = await walletManager.connectWallet(walletType);
+
+    // Update the instance's walletClient with the connected one
+    this.walletClient = result.walletClient;
+
+    this.logInfo('wallet_connected', {
+        address: result.address,
+        walletType: result.wallet.type
+    });
+    
+    // Re-initialize the smart account client with the new owner
+    await this.initializeSmartAccountClient();
+
+    return result;
+  }
+
+  /**
+   * Disconnect the currently connected wallet
+   */
+  public disconnectWallet(): void {
+    if (this.walletClient && this.walletClient.account) {
+      // Clear the account from the wallet client
+      (this.walletClient as any).account = null;
+    }
+    this.smartAccountClient = null;
+    this.logInfo?.('wallet_disconnected', {});
+  }
+
+  /**
    * Mask blockchain addresses for privacy
    */
   private maskAddress(address: string): string {
@@ -203,8 +273,8 @@ export class SbcAppKit {
       return this.smartAccountClient;
     }
 
-    if (!this.walletClient.account) {
-      throw new Error('No account attached to wallet client');
+    if (!this.walletClient?.account) {
+      throw new Error('No wallet connected. Call connectWallet() to connect a wallet first.');
     }
 
     this.logInfo('walletClient', this.walletClient);
@@ -528,8 +598,8 @@ export class SbcAppKit {
    * Get the owner address (EOA that controls the smart account)
    */
   getOwnerAddress(): Address {
-    if (!this.walletClient.account?.address) {
-      throw new Error('No account attached to wallet client');
+    if (!this.walletClient?.account?.address) {
+      throw new Error('No wallet connected. Call connectWallet() to connect a wallet first.');
     }
     return this.walletClient.account.address;
   }

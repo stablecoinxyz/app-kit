@@ -1,5 +1,6 @@
 // Main SDK exports
 export { SbcAppKit } from './app-kit';
+export { WalletManager } from './wallet-manager';
 
 // Type exports for users
 export type {
@@ -11,7 +12,13 @@ export type {
   UserOperationResult,
   UserOperationEstimate,
   AccountInfo,
-  ChainConfig
+  ChainConfig,
+  // Wallet Integration Types
+  SupportedWalletType,
+  WalletOptions,
+  DetectedWallet,
+  WalletConnectionResult,
+  WalletManagerConfig
 } from './types';
 
 // Public constants and utilities

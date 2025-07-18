@@ -17,6 +17,10 @@ export interface UseSbcAppReturn {
   accountError: Error | null;
   /** Refresh account information */
   refreshAccount: () => Promise<void>;
+  /** EOA address (MetaMask, etc) that owns the smart account */
+  ownerAddress: string | null;
+  /** Disconnect the wallet and clear all state */
+  disconnectWallet: () => void;
 }
 
 /**
@@ -27,26 +31,54 @@ export function useSbcApp(): UseSbcAppReturn {
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(false);
   const [accountError, setAccountError] = useState<Error | null>(null);
+  const [ownerAddress, setOwnerAddress] = useState<string | null>(null);
 
   const refreshAccount = useCallback(async () => {
     if (!sbcAppKit || !isInitialized) {
       setAccount(null);
+      setOwnerAddress(null);
       return;
     }
 
     try {
       setIsLoadingAccount(true);
       setAccountError(null);
-      const accountInfo = await sbcAppKit.getAccount();
-      setAccount(accountInfo);
+      
+      // First try to get owner address to check if wallet is connected
+      try {
+        const owner = sbcAppKit.getOwnerAddress();
+        setOwnerAddress(owner);
+        
+        // Only try to get account if wallet is connected
+        const accountInfo = await sbcAppKit.getAccount();
+        setAccount(accountInfo);
+      } catch (ownerError) {
+        // No wallet connected yet - this is normal for 'auto' wallet config
+        setOwnerAddress(null);
+        setAccount(null);
+        // Don't set this as an error - it's expected behavior
+        return;
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to load account');
       setAccountError(error);
       setAccount(null);
+      setOwnerAddress(null);
     } finally {
       setIsLoadingAccount(false);
     }
   }, [sbcAppKit, isInitialized]);
+
+  // Disconnect wallet and clear state
+  const disconnectWallet = useCallback(() => {
+    if (sbcAppKit) {
+      try {
+        sbcAppKit.disconnectWallet();
+      } catch {}
+    }
+    setAccount(null);
+    setOwnerAddress(null);
+  }, [sbcAppKit]);
 
   // Load account when SDK is initialized
   useEffect(() => {
@@ -55,6 +87,7 @@ export function useSbcApp(): UseSbcAppReturn {
     } else {
       setAccount(null);
       setAccountError(null);
+      setOwnerAddress(null);
     }
   }, [isInitialized, sbcAppKit, refreshAccount]);
 
@@ -66,5 +99,7 @@ export function useSbcApp(): UseSbcAppReturn {
     isLoadingAccount,
     accountError,
     refreshAccount,
+    ownerAddress,
+    disconnectWallet,
   };
 } 

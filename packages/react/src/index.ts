@@ -3,6 +3,8 @@ export * from './hooks/useSbcApp';
 export * from './hooks/useUserOperation';
 export * from './components/SbcProvider';
 export * from './components/WalletConnect';
+export * from './components/WalletButton';
+export * from './components/WalletSelector';
 export * from './types';
 
 // Re-export core types for convenience

@@ -30,6 +30,13 @@ jest.mock('viem/accounts', () => ({
   generatePrivateKey: jest.fn(() => '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'),
   privateKeyToAccount: jest.fn(() => ({
     address: '0x1234567890123456789012345678901234567890'
+  })),
+  toAccount: jest.fn(() => ({
+    address: '0x1234567890123456789012345678901234567890',
+    type: 'json-rpc',
+    signMessage: jest.fn(),
+    signTransaction: jest.fn(),
+    signTypedData: jest.fn(),
   }))
 }));
 
@@ -228,6 +235,129 @@ describe('SbcAppKit', () => {
 
       const kit = new SbcAppKit(config);
       expect(kit).toBeInstanceOf(SbcAppKit);
+    });
+
+    it('should initialize with wallet integration config', () => {
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: baseSepolia,
+        wallet: 'metamask',
+        walletOptions: {
+          autoConnect: false,
+          preferredWallets: ['metamask', 'coinbase']
+        }
+      };
+
+      const kit = new SbcAppKit(config);
+      expect(kit).toBeInstanceOf(SbcAppKit);
+    });
+
+    it('should default to auto wallet detection', () => {
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: baseSepolia
+      };
+
+      const kit = new SbcAppKit(config);
+      expect(kit).toBeInstanceOf(SbcAppKit);
+      // Should create temporary wallet for initialization
+    });
+  });
+
+  describe('Wallet Integration', () => {
+    let kit: SbcAppKit;
+
+    beforeEach(() => {
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: baseSepolia
+      };
+      kit = new SbcAppKit(config);
+    });
+
+    it('should get available wallets', async () => {
+      // Mock browser environment
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn()
+        }
+      };
+
+      const wallets = await kit.getAvailableWallets();
+      
+      expect(Array.isArray(wallets)).toBe(true);
+      expect(wallets.length).toBeGreaterThan(0);
+      
+      // Should include MetaMask when window.ethereum is available
+      const metamaskWallet = wallets.find(w => w.type === 'metamask');
+      expect(metamaskWallet).toBeDefined();
+      expect(metamaskWallet?.name).toBe('MetaMask');
+      expect(metamaskWallet?.available).toBe(true);
+    });
+
+    it('should connect to MetaMask wallet', async () => {
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      
+      // Mock MetaMask
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const connectionResult = await kit.connectWallet('metamask');
+      
+      expect(connectionResult).toBeDefined();
+      expect(connectionResult.wallet.type).toBe('metamask');
+      expect(connectionResult.wallet.name).toBe('MetaMask');
+      expect(connectionResult.address).toBe(mockAccounts[0]);
+      expect(connectionResult.walletClient).toBeDefined();
+    });
+
+    it('should auto-detect and connect to best available wallet', async () => {
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      
+      // Mock MetaMask
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const connectionResult = await kit.connectWallet('auto');
+      
+      expect(connectionResult).toBeDefined();
+      expect(connectionResult.wallet.type).toBe('metamask'); // Should choose MetaMask as best available
+      expect(connectionResult.address).toBe(mockAccounts[0]);
+    });
+
+    it('should handle wallet connection failure', async () => {
+      // Mock failed wallet connection
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockRejectedValue(new Error('User rejected request'))
+        }
+      };
+
+      await expect(kit.connectWallet('metamask')).rejects.toThrow('Failed to connect wallet');
+    });
+
+    it('should handle missing wallet', async () => {
+      // No wallet available
+      (global as any).window = {};
+
+      await expect(kit.connectWallet('metamask')).rejects.toThrow('MetaMask not found');
+    });
+
+    it('should handle auto-connect with no available wallets', async () => {
+      // No wallets available
+      (global as any).window = {};
+
+      await expect(kit.connectWallet('auto')).rejects.toThrow('WalletConnect integration coming soon. Please use MetaMask or Coinbase Wallet for now.');
     });
   });
 

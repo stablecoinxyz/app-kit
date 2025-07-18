@@ -1,5 +1,50 @@
 import { Address, Hex, Chain, WalletClient } from 'viem';
 
+// Wallet Integration Types
+export type SupportedWalletType = 'auto' | 'metamask' | 'coinbase' | 'walletconnect' | 'custom';
+
+export interface WalletOptions {
+  /** WalletConnect project ID (required for WalletConnect) */
+  projectId?: string;
+  /** Automatically connect to wallet on initialization */
+  autoConnect?: boolean;
+  /** Preferred wallets in order of preference */
+  preferredWallets?: SupportedWalletType[];
+  /** Custom wallet connection options */
+  customOptions?: Record<string, any>;
+}
+
+export interface DetectedWallet {
+  /** Wallet type identifier */
+  type: SupportedWalletType;
+  /** Human-readable wallet name */
+  name: string;
+  /** Whether the wallet is available/installed */
+  available: boolean;
+  /** Wallet icon/logo URL */
+  icon?: string;
+  /** Provider object for connection */
+  provider?: any;
+}
+
+export interface WalletConnectionResult {
+  /** Connected wallet client ready for use */
+  walletClient: WalletClient;
+  /** Connected wallet information */
+  wallet: DetectedWallet;
+  /** Connected account address */
+  address: Address;
+}
+
+export interface WalletManagerConfig {
+  /** Target blockchain chain */
+  chain: Chain;
+  /** Wallet connection options */
+  options?: WalletOptions;
+  /** Custom RPC URL */
+  rpcUrl?: string;
+}
+
 export interface AaProxyConfig {
   /** Blockchain network to operate on */
   chain: Chain;
@@ -17,15 +62,27 @@ export interface SbcAppKitConfig {
   chain: Chain;
   
   /** 
-   * Optional: Connected wallet client for signing operations
-   * Use this for production wallet integration where user's wallet signs transactions
+   * Wallet integration - specify wallet type or 'auto' for automatic detection
+   * @default 'auto' - Automatically detect and connect to available wallets
+   */
+  wallet?: SupportedWalletType;
+  
+  /** 
+   * Optional: Wallet connection options and preferences
+   */
+  walletOptions?: WalletOptions;
+  
+  /** 
+   * Optional: Pre-configured wallet client for advanced use cases
+   * Use this when you need full control over wallet client creation
+   * @deprecated Use 'wallet' option for standard wallet integration
    */
   walletClient?: WalletClient;
   
   /** 
    * Optional: Custom wallet private key 
    * @default Auto-generated random private key
-   * @deprecated Use walletClient for production wallet integration
+   * @deprecated Use 'wallet' option for production wallet integration
    */
   privateKey?: Hex;
   
