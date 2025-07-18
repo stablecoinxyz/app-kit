@@ -48,7 +48,7 @@ debug/
 # ESLint cache
 .eslintcache
 
-create-sbc-app/*
+create-sbc-app/
 
 .cursorrules
 
