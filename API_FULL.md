@@ -5,6 +5,7 @@
 Wrap your app with `SbcProvider` to provide SBC context and configuration.
 
 ### Usage
+
 ```tsx
 <SbcProvider config={config}>
   {/* your app */}
@@ -12,6 +13,7 @@ Wrap your app with `SbcProvider` to provide SBC context and configuration.
 ```
 
 ### Config Object
+
 | Name           | Type                | Required | Description |
 |----------------|---------------------|----------|-------------|
 | apiKey         | string              | Yes      | Your SBC API key |
@@ -26,6 +28,7 @@ Wrap your app with `SbcProvider` to provide SBC context and configuration.
 | logging        | LoggingConfig       | No       | Production logging configuration |
 
 #### WalletOptions
+
 - `projectId` (string): WalletConnect project ID
 - `autoConnect` (boolean): Automatically connect on init
 - `preferredWallets` (string[]): Order of wallet preference
@@ -38,6 +41,7 @@ Wrap your app with `SbcProvider` to provide SBC context and configuration.
 A button for connecting to a wallet. Handles loading, error, and disabled states.
 
 ### Usage
+
 ```tsx
 <WalletButton
   walletType="auto"
@@ -51,6 +55,7 @@ A button for connecting to a wallet. Handles loading, error, and disabled states
 ```
 
 ### Props
+
 | Name        | Type                      | Default | Description |
 |-------------|---------------------------|---------|-------------|
 | walletType  | string                    | 'auto'  | Wallet type: `'auto'`, `'metamask'`, `'coinbase'`, `'walletconnect'`, etc. |
@@ -68,6 +73,7 @@ A button for connecting to a wallet. Handles loading, error, and disabled states
 Access SBC state and actions in your components.
 
 ### Usage
+
 ```js
 const {
   sbcAppKit,        // SBC App Kit instance
@@ -83,6 +89,7 @@ const {
 ```
 
 ### Return Values
+
 | Name             | Type         | Description |
 |------------------|-------------|-------------|
 | sbcAppKit        | SbcAppKit    | SBC App Kit instance |
@@ -96,6 +103,7 @@ const {
 | disconnectWallet | () => void   | Disconnect wallet and clear state |
 
 #### AccountInfo
+
 - `address` (string): Smart account address
 - `balance` (bigint): Smart account ETH balance (wei)
 - `isDeployed` (boolean): Whether the smart account is deployed
@@ -108,6 +116,7 @@ const {
 Component for displaying and selecting from available wallets.
 
 ### Usage
+
 ```tsx
 <WalletSelector
   onConnect={result => { /* handle success */ }}
@@ -118,6 +127,7 @@ Component for displaying and selecting from available wallets.
 ```
 
 ### Props
+
 | Name              | Type                      | Default | Description |
 |-------------------|---------------------------|---------|-------------|
 | className         | string                    |         | Custom CSS class |
@@ -131,9 +141,11 @@ Component for displaying and selecting from available wallets.
 ## Types
 
 ### SbcAppKit
+
 Main SDK class for advanced usage. See source for full API.
 
 ### DetectedWallet
+
 - `type` (string): Wallet type
 - `name` (string): Wallet name
 - `available` (boolean): Is wallet available
@@ -141,6 +153,7 @@ Main SDK class for advanced usage. See source for full API.
 - `provider` (object): Wallet provider instance
 
 ### WalletConnectionResult
+
 - `walletClient` (WalletClient): Connected wallet client
 - `wallet` (DetectedWallet): Wallet info
 - `address` (string): Connected address
@@ -148,10 +161,11 @@ Main SDK class for advanced usage. See source for full API.
 ---
 
 ## Advanced Usage
+
 - Use `SbcAppKit` directly for custom flows.
 - Use `walletClient` or `privateKey` in config for backend/server-side integration.
 - Use `refreshAccount()` to update state after transactions.
 
 ---
 
-For more, see the source code and examples directory. 
+For more, see the source code and examples directory.
