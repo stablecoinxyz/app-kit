@@ -1,5 +1,12 @@
 # @stablecoin.xyz/react
 
+## 0.4.0
+
+### Minor Changes
+
+- a45f258: Add `className` and `render` prop support to `WalletButton` for full UI customization.
+  Update test environment to jsdom and add comprehensive tests for WalletButton.
+
 ## 0.3.0
 
 ### Minor Changes
@@ -84,5 +91,7 @@
   - @stablecoin.xyz/core@1.0.0
 
 ## [0.3.1]
+
 ### Changed
+
 - Docs-only update: Improved README.md for npmjs.com
