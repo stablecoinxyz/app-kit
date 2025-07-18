@@ -82,3 +82,7 @@
 - Updated dependencies [3bad4e7]
 - Updated dependencies [2b29daf]
   - @stablecoin.xyz/core@1.0.0
+
+## [0.3.1]
+### Changed
+- Docs-only update: Improved README.md for npmjs.com

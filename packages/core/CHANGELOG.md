@@ -79,3 +79,7 @@
 ### Patch Changes
 
 - 3bad4e7: Add react package with hooks and components
+
+## [1.1.1]
+### Changed
+- Docs-only update: Improved README.md for npmjs.com
