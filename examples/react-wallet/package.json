@@ -13,7 +13,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@stablecoin.xyz/react": "workspace:*",
+    "@stablecoin.xyz/react": "@latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "viem": "^2.3.0"
