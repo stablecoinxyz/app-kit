@@ -17,6 +17,14 @@ export interface WalletButtonProps {
   showLoading?: boolean;
   /** Disabled state */
   disabled?: boolean;
+  /** Custom render prop for full control */
+  render?: (props: {
+    onClick: () => void;
+    isConnecting: boolean;
+    disabled: boolean;
+    children: React.ReactNode;
+    className: string;
+  }) => React.ReactNode;
 }
 
 /**
@@ -32,6 +40,7 @@ export function WalletButton({
   children,
   showLoading = true,
   disabled = false,
+  render,
 }: WalletButtonProps) {
   const { sbcAppKit, refreshAccount } = useSbcApp();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -45,12 +54,9 @@ export function WalletButton({
       setError(null);
 
       const result = await sbcAppKit.connectWallet(walletType);
-      
       // Refresh app state after connection
       await refreshAccount();
-      
       onConnect?.(result);
-      
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to connect wallet');
       setError(error.message);
@@ -81,6 +87,26 @@ export function WalletButton({
 
   const finalClassName = `${baseStyles} ${stateStyles} ${className}`.trim();
 
+  // If render prop is provided, use it for rendering
+  if (render) {
+    return (
+      <div className="space-y-2">
+        {render({
+          onClick: handleConnect,
+          isConnecting,
+          disabled: isConnecting || disabled || !sbcAppKit,
+          children: getButtonText(),
+          className: finalClassName,
+        })}
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <button
@@ -94,7 +120,6 @@ export function WalletButton({
         )}
         {getButtonText()}
       </button>
-      
       {error && (
         <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
           {error}
