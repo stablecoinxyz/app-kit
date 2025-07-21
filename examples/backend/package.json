@@ -13,7 +13,7 @@
   "dependencies": {
     "@stablecoin.xyz/core": "latest",
     "dotenv": "^16.0.0",
-    "viem": "^2.7.13"
+    "viem": "^2.33.0"
   },
   "devDependencies": {
     "tsx": "^4.0.0"

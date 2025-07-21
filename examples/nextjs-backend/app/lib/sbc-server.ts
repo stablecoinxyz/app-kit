@@ -1,4 +1,4 @@
-import { SbcAppKit } from '@stablecoin.xyz/core';
+import { SbcAppKit, type SbcAppKitConfig } from '@stablecoin.xyz/core';
 import { base, baseSepolia, type Chain } from 'viem/chains';
 import { type Hex } from 'viem';
 
@@ -21,7 +21,7 @@ const config = {
   chain,
   apiKey,
   privateKey,
-};
+} as SbcAppKitConfig;
 
 // Singleton instance for server-side operations
 let sbcAppKitInstance: SbcAppKit | null = null;

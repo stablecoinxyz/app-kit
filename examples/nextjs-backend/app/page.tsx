@@ -13,12 +13,11 @@ const chain = process.env.NEXT_PUBLIC_CHAIN === 'base' ? base as Chain : baseSep
 
 // Configuration Constants
 const TRANSFER_AMOUNT = 1n * 10n ** BigInt(SBC_DECIMALS(chain)); // 1 SBC (chain decimals)
-const PERMIT_DURATION_SECONDS = 600; // 10 minutes
 
 // Client-side config (no private key)
 const config: SbcAppKitConfig = {
   apiKey: process.env.NEXT_PUBLIC_SBC_API_KEY || 'your_api_key_here',
-  chain,
+  chain: chain,
   debug: true,
 };
 

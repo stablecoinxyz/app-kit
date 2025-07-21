@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { SbcAppKit } from '@stablecoin.xyz/core';
+import { SbcAppKit, type SbcAppKitConfig } from '@stablecoin.xyz/core';
 import type { SbcProviderProps, SbcContextValue } from '../types';
 
 const SbcContext = createContext<SbcContextValue | undefined>(undefined);
@@ -14,7 +14,7 @@ export function SbcProvider({ config, children, onError }: SbcProviderProps) {
       setError(null);
       setIsInitialized(false);
       
-      const appKit = new SbcAppKit(config);
+      const appKit = new SbcAppKit(config as SbcAppKitConfig);
       
       setSbcAppKit(appKit);
       setIsInitialized(true);
