@@ -6,8 +6,8 @@ Simple React demo with SBC Account Abstraction.
 
 ```bash
 cd examples/react-basic
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## Features
@@ -19,6 +19,7 @@ npm run dev
 ## Environment
 
 ```env
+VITE_CHAIN="baseSepolia"
 VITE_SBC_API_KEY=your_api_key
 ```
 

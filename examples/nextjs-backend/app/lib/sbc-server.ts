@@ -1,8 +1,9 @@
 import { SbcAppKit } from '@stablecoin.xyz/core';
-import { baseSepolia } from 'viem/chains';
+import { base, baseSepolia, type Chain } from 'viem/chains';
 import { type Hex } from 'viem';
 
 // Check for required environment variables
+const chain = process.env.NEXT_PUBLIC_CHAIN === 'base' ? base as Chain : baseSepolia as Chain;
 const apiKey = process.env.SBC_API_KEY;
 const privateKey = process.env.OWNER_PRIVATE_KEY as Hex;
 
@@ -17,7 +18,7 @@ if (!privateKey) {
 }
 
 const config = {
-  chain: baseSepolia,
+  chain,
   apiKey,
   privateKey,
 };

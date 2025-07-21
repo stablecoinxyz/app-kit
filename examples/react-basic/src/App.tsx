@@ -1,4 +1,4 @@
-import { baseSepolia } from 'viem/chains';
+import { baseSepolia, base } from 'viem/chains';
 import { 
   SbcProvider, 
   useSbcApp, 
@@ -6,7 +6,7 @@ import {
   type SbcAppKitConfig
 } from '@stablecoin.xyz/react';
 import './App.css';
-import { Hex, encodeFunctionData } from 'viem';
+import { Hex, encodeFunctionData, Chain } from 'viem';
 import { useState, useEffect, useCallback } from 'react';
 
 /**
@@ -32,14 +32,41 @@ import { useState, useEffect, useCallback } from 'react';
  */
 
 // Configuration Constants
-const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16'; // Base Sepolia
-const SBC_DECIMALS = 6;
-const TRANSFER_AMOUNT = 1000000n; // 1 SBC (6 decimals)
+// default to baseSepolia, but can be overridden with VITE_CHAIN=base
+const chain = (import.meta.env.VITE_CHAIN === 'base') ? base : baseSepolia;
+
+const SBC_TOKEN_ADDRESS = (chain: Chain) => {
+  if (chain.id === baseSepolia.id) {
+    return '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
+  } else if (chain.id === base.id) {
+    return '0xfdcC3dd6671eaB0709A4C0f3F53De9a333d80798';
+  }
+  throw new Error('Unsupported chain');
+};
+
+const SBC_DECIMALS = (chain: Chain) => {
+  if (chain.id === baseSepolia.id) {
+    return 6;
+  } else if (chain.id === base.id) {
+    return 18;
+  }
+  throw new Error('Unsupported chain');
+};
+
+const chainExplorer = (chain: Chain) => {
+  if (chain.id === baseSepolia.id) {
+    return 'https://sepolia.basescan.org';
+  } else if (chain.id === base.id) {
+    return 'https://basescan.org';
+  }
+  throw new Error('Unsupported chain');
+};
+const TRANSFER_AMOUNT = 1n * 10n ** BigInt(SBC_DECIMALS(chain)); // 1 SBC (chain decimals)
 const PERMIT_DURATION_SECONDS = 600; // 10 minutes
 
 const config: SbcAppKitConfig = {
   apiKey: import.meta.env.VITE_SBC_API_KEY || 'your_api_key_here',
-  chain: baseSepolia,
+  chain,
   debug: true,
   // ⚠️ Demo only - use wallet integration in production
   privateKey: import.meta.env.VITE_PRIVATE_KEY as Hex,
@@ -190,7 +217,7 @@ function Dashboard() {
       const [ethBalance, sbcBalance] = await Promise.all([
         publicClient.getBalance({ address: address as `0x${string}` }),
         publicClient.readContract({
-          address: SBC_TOKEN_ADDRESS,
+          address: SBC_TOKEN_ADDRESS(chain),
           abi: ERC20_ABI.balanceOf,
           functionName: 'balanceOf',
           args: [address as `0x${string}`]
@@ -210,7 +237,7 @@ function Dashboard() {
   // Helper function to format SBC balance
   const formatSbcBalance = (balance: string | null): string => {
     if (!balance) return '0.00';
-    return (parseFloat(balance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
+    return (parseFloat(balance) / Math.pow(10, SBC_DECIMALS(chain))).toFixed(SBC_DECIMALS(chain));
   };
 
   // Helper function to format ETH balance
@@ -269,13 +296,13 @@ function Dashboard() {
     // Fetch required contract data in parallel
     const [nonce, tokenName] = await Promise.all([
       publicClient.readContract({
-        address: SBC_TOKEN_ADDRESS,
+        address: SBC_TOKEN_ADDRESS(chain),
         abi: ERC20_ABI.nonces,
         functionName: 'nonces',
         args: [ownerAddress]
       }),
       publicClient.readContract({
-        address: SBC_TOKEN_ADDRESS,
+        address: SBC_TOKEN_ADDRESS(chain),
         abi: ERC20_ABI.name,
         functionName: 'name',
         args: []
@@ -287,7 +314,7 @@ function Dashboard() {
       name: tokenName,
       version: '1',
       chainId: config.chain.id,
-      verifyingContract: SBC_TOKEN_ADDRESS,
+      verifyingContract: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
     };
 
     // EIP-712 permit type structure  
@@ -383,7 +410,7 @@ function Dashboard() {
     const transferData = createTransferCallData(toAddress, TRANSFER_AMOUNT);
     
     await sendUserOperation({
-      to: SBC_TOKEN_ADDRESS,
+      to: SBC_TOKEN_ADDRESS(chain),
       data: transferData,
       value: '0'
     });
@@ -404,9 +431,9 @@ function Dashboard() {
 
     await sendUserOperation({
       calls: [
-        { to: SBC_TOKEN_ADDRESS, data: permitData, value: 0n },
-        { to: SBC_TOKEN_ADDRESS, data: transferFromData, value: 0n },
-        { to: SBC_TOKEN_ADDRESS, data: finalTransferData, value: 0n }
+        { to: SBC_TOKEN_ADDRESS(chain), data: permitData, value: 0n },
+        { to: SBC_TOKEN_ADDRESS(chain), data: transferFromData, value: 0n },
+        { to: SBC_TOKEN_ADDRESS(chain), data: finalTransferData, value: 0n }
       ]
     });
   };
@@ -428,9 +455,9 @@ function Dashboard() {
         await sendPermitTransfer(targetAddress);
       } else {
         // Neither account has sufficient balance
-        const smartAccountSbc = (Number(smartAccountSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
-        const ownerSbc = (Number(ownerSbcBalance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
-        const requiredSbc = (Number(TRANSFER_AMOUNT) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
+        const smartAccountSbc = (Number(smartAccountSbcBalance) / Math.pow(10, SBC_DECIMALS(chain))).toFixed(SBC_DECIMALS(chain));
+        const ownerSbc = (Number(ownerSbcBalance) / Math.pow(10, SBC_DECIMALS(chain))).toFixed(SBC_DECIMALS(chain));
+        const requiredSbc = (Number(TRANSFER_AMOUNT) / Math.pow(10, SBC_DECIMALS(chain))).toFixed(SBC_DECIMALS(chain));
         
         throw new Error(
           `Insufficient SBC balance. Need ${requiredSbc} SBC. ` +

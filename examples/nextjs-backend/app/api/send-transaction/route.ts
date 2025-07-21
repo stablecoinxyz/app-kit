@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSbcAppKit } from '../../lib/sbc-server';
-import { encodeFunctionData } from 'viem';
+import { encodeFunctionData, Chain } from 'viem';
+import { SBC_TOKEN_ADDRESS, CHAIN } from '@/app/lib/common';
 
-const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
-const SBC_DECIMALS = 6;
 const PERMIT_DURATION_SECONDS = 600;
 
 const ERC20_ABI = {
@@ -79,13 +78,13 @@ export async function POST(request: Request) {
     // Fetch balances (use correct ABI for balanceOf)
     const [smartAccountSbcBalance, ownerSbcBalance] = await Promise.all([
       publicClient.readContract({
-        address: SBC_TOKEN_ADDRESS,
+        address: SBC_TOKEN_ADDRESS(CHAIN),
         abi: ERC20_ABI.balanceOf,
         functionName: 'balanceOf',
         args: [smartAccountAddress]
       }),
       publicClient.readContract({
-        address: SBC_TOKEN_ADDRESS,
+        address: SBC_TOKEN_ADDRESS(CHAIN),
         abi: ERC20_ABI.balanceOf,
         functionName: 'balanceOf',
         args: [ownerAddress]
@@ -100,7 +99,7 @@ export async function POST(request: Request) {
         args: [toAddress, BigInt(amount)]
       });
       const userOperation = await sbcAppKit.sendUserOperation({
-        to: SBC_TOKEN_ADDRESS,
+        to: SBC_TOKEN_ADDRESS(CHAIN),
         data: transferCallData,
         value: '0',
       });
@@ -112,13 +111,13 @@ export async function POST(request: Request) {
       // Fetch nonce and token name
       const [nonce, tokenName] = await Promise.all([
         publicClient.readContract({
-          address: SBC_TOKEN_ADDRESS,
+          address: SBC_TOKEN_ADDRESS(CHAIN),
           abi: ERC20_ABI.nonces,
           functionName: 'nonces',
           args: [ownerAddress]
         }),
         publicClient.readContract({
-          address: SBC_TOKEN_ADDRESS,
+          address: SBC_TOKEN_ADDRESS(CHAIN),
           abi: ERC20_ABI.name,
           functionName: 'name',
           args: []
@@ -129,7 +128,7 @@ export async function POST(request: Request) {
         name: tokenName,
         version: '1',
         chainId: config.chain.id,
-        verifyingContract: SBC_TOKEN_ADDRESS,
+        verifyingContract: SBC_TOKEN_ADDRESS(CHAIN),
       };
       const types = {
         Permit: [
@@ -175,9 +174,9 @@ export async function POST(request: Request) {
       });
       const userOperation = await sbcAppKit.sendUserOperation({
         calls: [
-          { to: SBC_TOKEN_ADDRESS, data: permitData, value: 0n },
-          { to: SBC_TOKEN_ADDRESS, data: transferFromData, value: 0n },
-          { to: SBC_TOKEN_ADDRESS, data: finalTransferData, value: 0n }
+          { to: SBC_TOKEN_ADDRESS(publicClient.chain as Chain), data: permitData, value: 0n },
+          { to: SBC_TOKEN_ADDRESS(publicClient.chain as Chain), data: transferFromData, value: 0n },
+          { to: SBC_TOKEN_ADDRESS(publicClient.chain as Chain), data: finalTransferData, value: 0n }
         ]
       });
       return NextResponse.json({ userOperation });

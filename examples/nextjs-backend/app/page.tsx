@@ -1,23 +1,24 @@
 'use client';
 
-import { baseSepolia } from 'viem/chains';
 import { 
   SbcProvider, 
   type SbcAppKitConfig
 } from '@stablecoin.xyz/react';
-import React, { useState, useEffect, useCallback, Component } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { SBC_DECIMALS, chainExplorer, SBC_TOKEN_ADDRESS } from './lib/common';
+import { base, baseSepolia, type Chain } from 'viem/chains';
+
+const chain = process.env.NEXT_PUBLIC_CHAIN === 'base' ? base as Chain : baseSepolia as Chain;
 
 // Configuration Constants
-const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16'; // Base Sepolia
-const SBC_DECIMALS = 6;
-const TRANSFER_AMOUNT = 1000000n; // 1 SBC (6 decimals)
+const TRANSFER_AMOUNT = 1n * 10n ** BigInt(SBC_DECIMALS(chain)); // 1 SBC (chain decimals)
 const PERMIT_DURATION_SECONDS = 600; // 10 minutes
 
 // Client-side config (no private key)
 const config: SbcAppKitConfig = {
   apiKey: process.env.NEXT_PUBLIC_SBC_API_KEY || 'your_api_key_here',
-  chain: baseSepolia,
+  chain,
   debug: true,
 };
 
@@ -74,7 +75,7 @@ const ERC20_ABI = {
 };
 
 // Proper ErrorBoundary class component
-class ErrorBoundary extends Component<
+class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
 > {
@@ -177,7 +178,7 @@ function Dashboard() {
       const [ethBalance, sbcBalance] = await Promise.all([
         publicClient.getBalance({ address: address as `0x${string}` }),
         publicClient.readContract({
-          address: SBC_TOKEN_ADDRESS,
+          address: SBC_TOKEN_ADDRESS(chain),
           abi: ERC20_ABI.balanceOf,
           functionName: 'balanceOf',
           args: [address as `0x${string}`]
@@ -198,7 +199,7 @@ function Dashboard() {
   const formatSbcBalance = (balance: string | null): string => {
     if (!balance) return '0.00';
     try {
-      return (parseFloat(balance) / Math.pow(10, SBC_DECIMALS)).toFixed(SBC_DECIMALS);
+      return (parseFloat(balance) / Math.pow(10, SBC_DECIMALS(chain))).toFixed(SBC_DECIMALS(chain));
     } catch {
       return '0.00';
     }
@@ -217,7 +218,7 @@ function Dashboard() {
   // Helper function to get explorer URL for transaction hash
   const getExplorerUrl = (txHash: string): string => {
     // Base Sepolia explorer URL
-    return `https://sepolia.basescan.org/tx/${txHash}`;
+    return `${chainExplorer(chain)}/tx/${txHash}`;
   };
 
   // Function to fetch all balances

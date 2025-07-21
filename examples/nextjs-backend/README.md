@@ -6,8 +6,8 @@ Next.js app with backend SBC integration (most secure pattern).
 
 ```bash
 cd examples/nextjs-backend
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## Features
@@ -20,6 +20,7 @@ npm run dev
 ## Environment
 
 ```env
+NEXT_PUBLIC_CHAIN="baseSepolia"
 SBC_API_KEY=your_api_key
 OWNER_PRIVATE_KEY=0x...
 ```

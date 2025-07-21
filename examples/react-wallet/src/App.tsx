@@ -1,14 +1,41 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPublicClient, http, getAddress, parseSignature, WalletClient, PublicClient, Hex } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { createPublicClient, http, getAddress, parseSignature, WalletClient, PublicClient, Chain } from 'viem';
+import { baseSepolia, base } from 'viem/chains';
 import { SbcProvider, WalletButton, useSbcApp, useUserOperation } from '@stablecoin.xyz/react';
 import { parseUnits, encodeFunctionData, erc20Abi } from 'viem';
 import './index.css';
 
-const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
-const SBC_DECIMALS = 6;
+// default to baseSepolia, but can be overridden with VITE_CHAIN=base
+const chain = (import.meta.env.VITE_CHAIN === 'base') ? base : baseSepolia;
 
-const publicClient = createPublicClient({ chain: baseSepolia, transport: http() });
+const SBC_TOKEN_ADDRESS = (chain: Chain) => {
+  if (chain.id === baseSepolia.id) {
+    return '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
+  } else if (chain.id === base.id) {
+    return '0xfdcC3dd6671eaB0709A4C0f3F53De9a333d80798';
+  }
+  throw new Error('Unsupported chain');
+};
+
+const SBC_DECIMALS = (chain: Chain) => {
+  if (chain.id === baseSepolia.id) {
+    return 6;
+  } else if (chain.id === base.id) {
+    return 18;
+  }
+  throw new Error('Unsupported chain');
+};
+
+const chainExplorer = (chain: Chain) => {
+  if (chain.id === baseSepolia.id) {
+    return 'https://sepolia.basescan.org';
+  } else if (chain.id === base.id) {
+    return 'https://basescan.org';
+  }
+  throw new Error('Unsupported chain');
+};
+
+const publicClient = createPublicClient({ chain, transport: http() });
 
 const erc20PermitAbi = [
   ...erc20Abi,
@@ -59,7 +86,7 @@ function WalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
         const [ethBalance, sbcBalance] = await Promise.all([
           publicClient.getBalance({ address: ownerAddress as `0x${string}` }),
           publicClient.readContract({
-            address: SBC_TOKEN_ADDRESS as `0x${string}`,
+            address: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
             abi: erc20Abi,
             functionName: 'balanceOf',
             args: [ownerAddress as `0x${string}`],
@@ -94,7 +121,7 @@ function WalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
   const formatSbcBalance = (balance: string | null): string => {
     if (!balance) return '0.00';
     try {
-      return (Number(balance) / Math.pow(10, SBC_DECIMALS)).toFixed(2);
+      return (Number(balance) / Math.pow(10, SBC_DECIMALS(chain))).toFixed(2);
     } catch {
       return '0.00';
     }
@@ -152,7 +179,7 @@ function SmartAccountInfo() {
       setIsLoadingBalance(true);
       try {
         const balance = await publicClient.readContract({
-          address: SBC_TOKEN_ADDRESS as `0x${string}`,
+          address: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
           abi: erc20Abi,
           functionName: 'balanceOf',
           args: [account.address as `0x${string}`],
@@ -178,7 +205,7 @@ function SmartAccountInfo() {
         setIsLoadingBalance(true);
         try {
           const balance = await publicClient.readContract({
-            address: SBC_TOKEN_ADDRESS as `0x${string}`,
+            address: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
             abi: erc20Abi,
             functionName: 'balanceOf',
             args: [account.address as `0x${string}`],
@@ -210,7 +237,7 @@ function SmartAccountInfo() {
   const formatSbcBalance = (balance: string | null): string => {
     if (!balance) return '0.00';
     try {
-      return (Number(balance) / Math.pow(10, SBC_DECIMALS)).toFixed(2);
+      return (Number(balance) / Math.pow(10, SBC_DECIMALS(chain))).toFixed(2);
     } catch {
       return '0.00';
     }
@@ -283,7 +310,7 @@ function TransactionForm() {
     try {
       const ownerChecksum = getAddress(ownerAddress);
       const spenderChecksum = getAddress(account.address);
-      const value = parseUnits(amount, SBC_DECIMALS);
+      const value = parseUnits(amount, SBC_DECIMALS(chain));
       const deadline = Math.floor(Date.now() / 1000) + 60 * 30; // 30 min
       
       const signature = await getPermitSignature({
@@ -292,8 +319,8 @@ function TransactionForm() {
         owner: ownerChecksum,
         spender: spenderChecksum,
         value,
-        tokenAddress: SBC_TOKEN_ADDRESS,
-        chainId: baseSepolia.id,
+        tokenAddress: SBC_TOKEN_ADDRESS(chain),
+        chainId: chain.id,
         deadline,
       });
 
@@ -316,8 +343,8 @@ function TransactionForm() {
       
       await sendUserOperation({
         calls: [
-          { to: SBC_TOKEN_ADDRESS as `0x${string}`, data: permitCallData },
-          { to: SBC_TOKEN_ADDRESS as `0x${string}`, data: transferFromCallData },
+          { to: SBC_TOKEN_ADDRESS(chain) as `0x${string}`, data: permitCallData },
+          { to: SBC_TOKEN_ADDRESS(chain) as `0x${string}`, data: transferFromCallData },
         ],
       });
     } catch (err) {
@@ -390,7 +417,7 @@ function TransactionForm() {
             <p className="text-sm text-green-800 font-medium">✅ Transaction Successful!</p>
             <p className="text-xs text-green-600 font-mono break-all mt-1">
               <a 
-                href={`https://sepolia.basescan.org/tx/${data.transactionHash}`}
+                href={`${chainExplorer(chain)}/tx/${data.transactionHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:underline"
@@ -414,7 +441,7 @@ function TransactionForm() {
 export default function App() {
   const sbcConfig = {
     apiKey: import.meta.env.VITE_SBC_API_KEY,
-    chain: baseSepolia,
+    chain,
     wallet: 'auto' as const,
     debug: true,
     walletOptions: { autoConnect: false },
@@ -522,7 +549,7 @@ async function getPermitSignature({
       name: tokenName as string,
       version: '1',
       chainId: BigInt(chainId),
-      verifyingContract: SBC_TOKEN_ADDRESS as `0x${string}`,
+      verifyingContract: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
     };
     
     const types = {

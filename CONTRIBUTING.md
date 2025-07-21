@@ -90,8 +90,8 @@ Thank you for your interest in contributing! We welcome improvements, bug fixes,
 - Publish from the package directory:
 
   ```bash
-  cd packages/core && npm publish --access public
-  cd ../react && npm publish --access public
+  cd packages/core && pnpm publish --access public
+  cd ../react && pnpm publish --access public
   ```
 
 ## Support & Questions

@@ -6,8 +6,8 @@ React app with wallet integration for SBC Account Abstraction.
 
 ```bash
 cd examples/react-wallet
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## Features
@@ -20,5 +20,6 @@ npm run dev
 ## Environment
 
 ```env
+VITE_CHAIN="baseSepolia"
 VITE_SBC_API_KEY=your_api_key
 ```

@@ -6,8 +6,8 @@ Node.js backend integration with SBC Account Abstraction.
 
 ```bash
 cd examples/backend
-npm install
-npm run basic
+pnpm install
+pnpm run basic
 ```
 
 ## Features

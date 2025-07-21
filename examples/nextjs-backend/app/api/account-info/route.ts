@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSbcAppKit } from '@/app/lib/sbc-server';
-import { formatEther } from 'viem';
-
-// SBC token address on baseSepolia
-const SBC_TOKEN_ADDRESS = '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
+import { formatEther, PublicClient } from 'viem';
+import { SBC_TOKEN_ADDRESS, CHAIN } from '@/app/lib/common';
+import { Chain } from 'viem';
 
 export async function GET() {
   const kit = await getSbcAppKit();
@@ -44,10 +43,10 @@ export async function GET() {
   });
 }
 
-async function fetchSbcBalance(publicClient: any, address: string): Promise<string> {
+async function fetchSbcBalance(publicClient: PublicClient, address: string): Promise<string> {
   try {
     const balance = await publicClient.readContract({
-      address: SBC_TOKEN_ADDRESS,
+      address: SBC_TOKEN_ADDRESS(CHAIN),
       abi: [
         {
           "constant": true,
@@ -59,7 +58,7 @@ async function fetchSbcBalance(publicClient: any, address: string): Promise<stri
       ],
       functionName: 'balanceOf',
       args: [address],
-    });
+    }) as bigint;
     return balance.toString();
   } catch (e) {
     return '0';

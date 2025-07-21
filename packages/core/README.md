@@ -8,6 +8,8 @@ Core SDK for the SBC App Kit – Account Abstraction for gasless transactions, p
 npm install @stablecoin.xyz/core
 # or
 yarn add @stablecoin.xyz/core
+# or
+pnpm add @stablecoin.xyz/core
 ```
 
 ## Usage Example
