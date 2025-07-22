@@ -66,14 +66,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const sbcAppKit = await getSbcAppKit();
-    const ownerAddress = sbcAppKit.getOwnerAddress();
-    const account = await sbcAppKit.getAccount();
+    const sbcApp = await getSbcAppKit();
+    const ownerAddress = sbcApp.getOwnerAddress();
+    const account = await sbcApp.getAccount();
     const smartAccountAddress = account.address;
     // Use helper methods to get publicClient, walletClient, and config
-    const publicClient = sbcAppKit.getPublicClient();
-    const walletClient = sbcAppKit.getWalletClient();
-    const config = sbcAppKit.getConfig();
+    const publicClient = sbcApp.getPublicClient();
+    const walletClient = sbcApp.getWalletClient();
+    const config = sbcApp.getConfig();
 
     // Fetch balances (use correct ABI for balanceOf)
     const [smartAccountSbcBalance, ownerSbcBalance] = await Promise.all([
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
         functionName: 'transfer',
         args: [toAddress, BigInt(amount)]
       });
-      const userOperation = await sbcAppKit.sendUserOperation({
+      const userOperation = await sbcApp.sendUserOperation({
         to: SBC_TOKEN_ADDRESS(CHAIN),
         data: transferCallData,
         value: '0',
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
         functionName: 'transfer',
         args: [toAddress, BigInt(amount)]
       });
-      const userOperation = await sbcAppKit.sendUserOperation({
+      const userOperation = await sbcApp.sendUserOperation({
         calls: [
           { to: SBC_TOKEN_ADDRESS(publicClient.chain as Chain), data: permitData, value: 0n },
           { to: SBC_TOKEN_ADDRESS(publicClient.chain as Chain), data: transferFromData, value: 0n },

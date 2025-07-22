@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getSbcAppKit } from '@/app/lib/sbc-server';
-import { formatEther, PublicClient } from 'viem';
+import { PublicClient } from 'viem';
 import { SBC_TOKEN_ADDRESS, CHAIN } from '@/app/lib/common';
-import { Chain } from 'viem';
 
 export async function GET() {
-  const kit = await getSbcAppKit();
-  const account = await kit.getAccount();
-  const publicClient = kit.getPublicClient();
-  const ownerAddress = kit.getOwnerAddress();
+  const sbcApp = await getSbcAppKit();
+  const account = await sbcApp.getAccount();
+  const publicClient = sbcApp.getPublicClient();
+  const ownerAddress = sbcApp.getOwnerAddress();
 
   console.log('Owner (EOA) address:', ownerAddress);
   console.log('Smart account address:', account.address);

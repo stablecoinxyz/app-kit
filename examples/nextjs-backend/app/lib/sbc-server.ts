@@ -4,6 +4,7 @@ import { type Hex } from 'viem';
 
 // Check for required environment variables
 const chain = process.env.NEXT_PUBLIC_CHAIN === 'base' ? base as Chain : baseSepolia as Chain;
+const rpcUrl = process.env.RPC_URL;
 const apiKey = process.env.SBC_API_KEY;
 const privateKey = process.env.OWNER_PRIVATE_KEY as Hex;
 
@@ -22,6 +23,10 @@ const config = {
   apiKey,
   privateKey,
 } as SbcAppKitConfig;
+
+if (rpcUrl) {
+  config.rpcUrl = rpcUrl;
+}
 
 // Singleton instance for server-side operations
 let sbcAppKitInstance: SbcAppKit | null = null;

@@ -67,6 +67,7 @@ const PERMIT_DURATION_SECONDS = 600; // 10 minutes
 const config: SbcAppKitConfig = {
   apiKey: import.meta.env.VITE_SBC_API_KEY || 'your_api_key_here',
   chain,
+  rpcUrl: import.meta.env.VITE_RPC_URL,
   debug: true,
   // ⚠️ Demo only - use wallet integration in production
   privateKey: import.meta.env.VITE_PRIVATE_KEY as Hex,

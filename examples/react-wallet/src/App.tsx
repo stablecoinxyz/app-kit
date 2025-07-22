@@ -7,6 +7,7 @@ import './index.css';
 
 // default to baseSepolia, but can be overridden with VITE_CHAIN=base
 const chain = (import.meta.env.VITE_CHAIN === 'base') ? base : baseSepolia;
+const rpcUrl = import.meta.env.VITE_RPC_URL;
 
 const SBC_TOKEN_ADDRESS = (chain: Chain) => {
   if (chain.id === baseSepolia.id) {
@@ -444,6 +445,7 @@ export default function App() {
     chain,
     wallet: 'auto' as const,
     debug: true,
+    rpcUrl,
     walletOptions: { autoConnect: false },
   };
 

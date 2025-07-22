@@ -20,9 +20,14 @@ pnpm run dev
 ## Environment
 
 ```env
+# client side
 NEXT_PUBLIC_CHAIN="baseSepolia"
+NEXT_PUBLIC_RPC_URL=your_rpc_url
+NEXT_PUBLIC_SBC_API_KEY=your_api_key
+# server side
 SBC_API_KEY=your_api_key
 OWNER_PRIVATE_KEY=0x...
+RPC_URL=your_rpc_url
 ```
 
 ## Security

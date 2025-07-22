@@ -1,6 +1,5 @@
 import { createPublicClient, createWalletClient, http, decodeAbiParameters, Hex, PublicClient, WalletClient, Chain } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { base, baseSepolia } from 'viem/chains';
 import { CHAIN_CONFIGS, SBC_API_KEY_PREFIX } from './constants';
 import { ChainConfig, AaProxyConfig } from './types';
 

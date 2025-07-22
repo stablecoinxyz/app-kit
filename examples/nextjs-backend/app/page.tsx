@@ -10,6 +10,7 @@ import { SBC_DECIMALS, chainExplorer, SBC_TOKEN_ADDRESS } from './lib/common';
 import { base, baseSepolia, type Chain } from 'viem/chains';
 
 const chain = process.env.NEXT_PUBLIC_CHAIN === 'base' ? base as Chain : baseSepolia as Chain;
+const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
 
 // Configuration Constants
 const TRANSFER_AMOUNT = 1n * 10n ** BigInt(SBC_DECIMALS(chain)); // 1 SBC (chain decimals)
@@ -19,6 +20,7 @@ const config: SbcAppKitConfig = {
   apiKey: process.env.NEXT_PUBLIC_SBC_API_KEY || 'your_api_key_here',
   chain: chain,
   debug: true,
+  rpcUrl,
 };
 
 // ABI Definitions
