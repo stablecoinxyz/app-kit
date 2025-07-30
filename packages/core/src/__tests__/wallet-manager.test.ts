@@ -313,4 +313,141 @@ describe('WalletManager', () => {
       expect(typeof result.walletClient.account!.signTypedData).toBe('function');
     });
   });
+
+  describe('Dynamic Integration', () => {
+    let mockDynamicWalletClient: any;
+    let mockPrimaryWallet: any;
+
+    beforeEach(() => {
+      mockDynamicWalletClient = {
+        signMessage: jest.fn().mockResolvedValue('0xsignature'),
+        signTransaction: jest.fn().mockResolvedValue('0xtxsignature'),
+        signTypedData: jest.fn().mockResolvedValue('0xtypedsignature'),
+        transport: { type: 'custom' }
+      };
+
+      mockPrimaryWallet = {
+        address: '0x1234567890123456789012345678901234567890',
+        connector: {
+          name: 'MetaMask',
+          getWalletClient: jest.fn().mockResolvedValue(mockDynamicWalletClient)
+        }
+      };
+    });
+
+    it('should connect to Dynamic wallet successfully', async () => {
+      config.options = {
+        dynamicContext: {
+          primaryWallet: mockPrimaryWallet
+        }
+      };
+      walletManager = new WalletManager(config);
+
+      const result = await walletManager.connectWallet('dynamic');
+
+      expect(result).toBeDefined();
+      expect(result.walletClient).toBeDefined();
+      expect(result.wallet.type).toBe('dynamic');
+      expect(result.wallet.name).toBe('Dynamic (MetaMask)');
+      expect(result.address).toBe(mockPrimaryWallet.address);
+    });
+
+    it('should create compatible wallet client with LocalAccount structure', async () => {
+      config.options = {
+        dynamicContext: {
+          primaryWallet: mockPrimaryWallet
+        }
+      };
+      walletManager = new WalletManager(config);
+
+      const result = await walletManager.connectWallet('dynamic');
+
+      expect(result.walletClient.account).toBeDefined();
+      expect(result.walletClient.account!.address).toBe(mockPrimaryWallet.address);
+      expect(result.walletClient.account!.type).toBe('json-rpc');
+      expect(typeof result.walletClient.account!.signMessage).toBe('function');
+      expect(typeof result.walletClient.account!.signTransaction).toBe('function');
+      expect(typeof result.walletClient.account!.signTypedData).toBe('function');
+    });
+
+    it('should provide signing methods on account', async () => {
+      config.options = {
+        dynamicContext: {
+          primaryWallet: mockPrimaryWallet
+        }
+      };
+      walletManager = new WalletManager(config);
+
+      const result = await walletManager.connectWallet('dynamic');
+
+      // Ensure account exists before testing
+      expect(result.walletClient.account).toBeDefined();
+      const account = result.walletClient.account!;
+
+      // Test that signing methods exist and are callable
+      expect(typeof account.signMessage).toBe('function');
+      expect(typeof account.signTransaction).toBe('function');
+      expect(typeof account.signTypedData).toBe('function');
+
+      // Test that signing methods exist and are functions
+      expect(account.signMessage).toBeDefined();
+      expect(account.signTransaction).toBeDefined();
+      expect(account.signTypedData).toBeDefined();
+    });
+
+    it('should throw error when Dynamic context is missing', async () => {
+      config.options = {};
+      walletManager = new WalletManager(config);
+
+      await expect(walletManager.connectWallet('dynamic')).rejects.toThrow(
+        'Dynamic primaryWallet not found'
+      );
+    });
+
+    it('should throw error when primaryWallet is not provided', async () => {
+      config.options = {
+        dynamicContext: {}
+      };
+      walletManager = new WalletManager(config);
+
+      await expect(walletManager.connectWallet('dynamic')).rejects.toThrow(
+        'Dynamic primaryWallet not found'
+      );
+    });
+
+    it('should throw error when primaryWallet has no address', async () => {
+      config.options = {
+        dynamicContext: {
+          primaryWallet: {
+            connector: {
+              getWalletClient: jest.fn().mockResolvedValue(mockDynamicWalletClient)
+            }
+          }
+        }
+      };
+      walletManager = new WalletManager(config);
+
+      await expect(walletManager.connectWallet('dynamic')).rejects.toThrow(
+        'Dynamic wallet not connected'
+      );
+    });
+
+    it('should throw error when Dynamic wallet client fails', async () => {
+      config.options = {
+        dynamicContext: {
+          primaryWallet: {
+            ...mockPrimaryWallet,
+            connector: {
+              getWalletClient: jest.fn().mockRejectedValue(new Error('Connection failed'))
+            }
+          }
+        }
+      };
+      walletManager = new WalletManager(config);
+
+      await expect(walletManager.connectWallet('dynamic')).rejects.toThrow(
+        'Failed to connect Dynamic wallet'
+      );
+    });
+  });
 }); 
