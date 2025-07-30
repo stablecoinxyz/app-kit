@@ -12,9 +12,6 @@ import './App.css';
 const chain = (import.meta.env.VITE_CHAIN === 'base') ? base : baseSepolia;
 const rpcUrl = import.meta.env.VITE_RPC_URL;
 
-console.log('VITE_CHAIN', import.meta.env.VITE_CHAIN);
-console.log('VITE_RPC_URL', import.meta.env.VITE_RPC_URL);
-
 const SBC_TOKEN_ADDRESS = (chain: Chain) => {
   if (chain.id === baseSepolia.id) {
     return '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
@@ -42,7 +39,7 @@ const chainExplorer = (chain: Chain) => {
   throw new Error('Unsupported chain');
 };
 
-const publicClient = createPublicClient({ chain, transport: http(rpcUrl) });
+const publicClient = createPublicClient({ chain, transport: http(rpcUrl) }) as PublicClient;
 
 const erc20PermitAbi = [
   ...erc20Abi,
@@ -89,6 +86,42 @@ const DynamicUserProfileWrapper = () => {
   return <DynamicUserProfile />;
 };
 
+// Dynamic connect flow component
+function DynamicConnectFlow() {
+  const { primaryWallet, setShowAuthFlow, handleLogOut } = useDynamicContext();
+
+  const handleDisconnect = async () => {
+    try {
+      console.log('Attempting to disconnect wallet');
+      await handleLogOut();
+      console.log('Logout successful');
+    } catch (error) {
+      console.error('Failed to disconnect:', error);
+    }
+  };
+
+  if (!primaryWallet) {
+    return (
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect Your Dynamic Wallet</h3>
+        <p className="text-sm text-blue-600 mb-3">
+          Connect your wallet through Dynamic to create a smart account with your wallet as the signer
+        </p>
+        <button
+          onClick={() => setShowAuthFlow(true)}
+          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+        >
+          Connect Wallet
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <DynamicWalletStatus onDisconnect={handleDisconnect} />
+  );
+}
+
 // Dynamic wallet status component
 function DynamicWalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
   const { primaryWallet } = useDynamicContext();
@@ -102,7 +135,6 @@ function DynamicWalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
     const fetchBalances = async () => {
       setIsLoadingBalances(true);
       try {
-        // Fetch ETH and SBC balances in parallel
         const [ethBalance, sbcBalance] = await Promise.all([
           publicClient.getBalance({ address: primaryWallet.address as `0x${string}` }),
           publicClient.readContract({
@@ -118,8 +150,8 @@ function DynamicWalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
           sbc: sbcBalance.toString(),
         });
       } catch (error) {
-        console.error('Failed to fetch wallet balances:', error);
-        setBalances({ eth: '0', sbc: '0' });
+        console.error('Failed to fetch balances:', error);
+        setBalances({ eth: null, sbc: null });
       } finally {
         setIsLoadingBalances(false);
       }
@@ -128,23 +160,16 @@ function DynamicWalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
     fetchBalances();
   }, [primaryWallet?.address]);
 
-  // Helper functions for formatting
   const formatEthBalance = (balance: string | null): string => {
     if (!balance) return '0.0000';
-    try {
-      return (Number(balance) / 1e18).toFixed(4);
-    } catch {
-      return '0.0000';
-    }
+    const ethValue = Number(balance) / 1e18;
+    return ethValue.toFixed(4);
   };
 
   const formatSbcBalance = (balance: string | null, decimals: number): string => {
-    if (!balance) return '0.00';
-    try {
-      return (Number(balance) / Math.pow(10, decimals)).toFixed(2);
-    } catch {
-      return '0.00';
-    }
+    if (!balance) return '0.0000';
+    const sbcValue = Number(balance) / Math.pow(10, decimals);
+    return sbcValue.toFixed(4);
   };
 
   if (!primaryWallet) return null;
@@ -175,12 +200,14 @@ function DynamicWalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
             )}
           </div>
         </div>
-        <button
-          onClick={onDisconnect}
-          className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-4"
-        >
-          Disconnect Wallet
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onDisconnect}
+            className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+          >
+            Disconnect
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -295,7 +322,6 @@ function SmartAccountInfo() {
           <span className="text-purple-600">{account.nonce}</span>
         </div>
         
-        {/* Enhanced Balance Section */}
         <div className="pt-2 border-t border-purple-200">
           <p className="text-xs font-medium text-purple-700 mb-2">Smart Account Balances:</p>
           <div className="space-y-1">
@@ -322,44 +348,25 @@ function SmartAccountInfo() {
 function TransactionForm() {
   const { account, sbcAppKit } = useSbcApp();
   const { sendUserOperation, isLoading, isSuccess, isError, error: opError, data } = useUserOperation();
-  const { primaryWallet } = useDynamicContext();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('1');
   const isFormValid = recipient && /^0x[a-fA-F0-9]{40}$/.test(recipient) && parseFloat(amount) > 0;
 
   const handleSendTransaction = async () => {
-    if (!account || !primaryWallet) return;
+    if (!account || !sbcAppKit) return;
     try {
-      const ownerChecksum = getAddress(primaryWallet.address);
+      const ownerAddress = sbcAppKit.getOwnerAddress();
+      const ownerChecksum = getAddress(ownerAddress);
       const spenderChecksum = getAddress(account.address);
       const value = parseUnits(amount, SBC_DECIMALS(chain));
       const deadline = Math.floor(Date.now() / 1000) + 60 * 30; // 30 min
       
-      // Get the wallet client from Dynamic and set the account
-      const dynamicWalletClient = (await primaryWallet.connector.getWalletClient()) as WalletClient;
-      
-      // Create a custom signing function that works with Dynamic
-      const customSignTypedData = async (params: any) => {
-        console.log('Custom signing with params:', params);
-        return await dynamicWalletClient.signTypedData({
-          ...params,
-          account: primaryWallet.address as `0x${string}`,
-        });
-      };
-      
-      // Create a wallet client with custom signing
-      const signingWalletClient = {
-        ...dynamicWalletClient,
-        account: {
-          address: primaryWallet.address as `0x${string}`,
-          type: 'json-rpc' as const,
-        },
-        signTypedData: customSignTypedData,
-      };
+      // Use the wallet client from SBC Provider (already configured for Dynamic)
+      const walletClient = (sbcAppKit as any).walletClient as WalletClient;
       
       const signature = await getPermitSignature({
-        publicClient: publicClient as PublicClient,
-        walletClient: signingWalletClient as WalletClient,
+        publicClient,
+        walletClient,
         owner: ownerChecksum,
         spender: spenderChecksum,
         value,
@@ -638,99 +645,56 @@ function DynamicSbcProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Dynamic connect flow component
-function DynamicConnectFlow() {
-  const { primaryWallet, setShowAuthFlow, handleLogOut } = useDynamicContext();
-
-  const handleDisconnect = async () => {
-    try {
-      console.log('Attempting to disconnect wallet');
-      await handleLogOut();
-      console.log('Logout successful');
-    } catch (error) {
-      console.error('Failed to disconnect:', error);
-    }
-  };
-
-  if (!primaryWallet) {
-    return (
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect Your Dynamic Wallet</h3>
-        <p className="text-sm text-blue-600 mb-3">
-          Connect your wallet through Dynamic to create a smart account with your wallet as the signer
-        </p>
-        <button
-          onClick={() => setShowAuthFlow(true)}
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-        >
-          Connect Wallet
-        </button>
-      </div>
-    );
-  }
+// Main App component
+function DynamicApp() {
 
   return (
-    <DynamicWalletStatus onDisconnect={handleDisconnect} />
-  );
-}
-
-// Main App component with Dynamic SDK integration
-export default function App() {
-  const dynamicEnvId = import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID;
-
-  if (!dynamicEnvId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Configuration Error</h1>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
+            <img src="/sbc-logo.png" alt="SBC Logo" width={36} height={36} />
+            SBC (Dynamic) Integration
+          </h1>
           <p className="text-gray-600">
-            Please set VITE_DYNAMIC_ENVIRONMENT_ID in your environment variables.
+            Gasless transactions with Dynamic SDK integration
+          </p>
+        </div>
+        
+        <DynamicConnectFlow />
+        
+        <DynamicSbcProvider>
+          <SmartAccountInfo />
+          <TransactionForm />
+        </DynamicSbcProvider>
+        
+        {/* Dynamic User Profile Modal - only render when SDK is ready */}
+        <DynamicUserProfileWrapper />
+        
+        <div className="mt-8 text-center text-xs text-gray-500">
+          <p>
+            Powered by{' '}
+            <a href="https://stablecoin.xyz" className="text-blue-600 hover:underline">
+              SBC AppKit
+            </a>
+            {' '}• Dynamic SDK integration
           </p>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
+// Root App component with Dynamic provider
+export default function App() {
   return (
     <DynamicContextProvider
       settings={{
-        environmentId: dynamicEnvId,
+        environmentId: import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID || '',
         walletConnectors: [EthereumWalletConnectors, ZeroDevSmartWalletConnectors],
       }}
     >
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
-              <img src="/sbc-logo.png" alt="SBC Logo" width={36} height={36} />
-              SBC (Dynamic) Integration
-            </h1>
-            <p className="text-gray-600">
-              Gasless transactions with Dynamic SDK integration
-            </p>
-          </div>
-          
-          <DynamicConnectFlow />
-          
-          <DynamicSbcProvider>
-            <SmartAccountInfo />
-            <TransactionForm />
-          </DynamicSbcProvider>
-          
-          {/* Dynamic User Profile Modal - only render when SDK is ready */}
-          <DynamicUserProfileWrapper />
-          
-          <div className="mt-8 text-center text-xs text-gray-500">
-            <p>
-              Powered by{' '}
-              <a href="https://stablecoin.xyz" className="text-blue-600 hover:underline">
-                SBC AppKit
-              </a>
-              {' '}• Dynamic SDK integration
-            </p>
-          </div>
-        </div>
-      </div>
+      <DynamicApp />
     </DynamicContextProvider>
   );
 } 

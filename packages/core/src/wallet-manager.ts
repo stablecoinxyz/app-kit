@@ -1,11 +1,10 @@
-import { createWalletClient, custom, WalletClient, Chain } from 'viem';
+import { createWalletClient, custom } from 'viem';
 import { toAccount } from 'viem/accounts';
 import type {
   SupportedWalletType,
   DetectedWallet,
   WalletConnectionResult,
   WalletManagerConfig,
-  WalletOptions
 } from './types';
 
 /**
@@ -97,6 +96,11 @@ export class WalletManager {
    * Connect to a specific wallet type
    */
   async connectWallet(walletType: SupportedWalletType = 'auto'): Promise<WalletConnectionResult> {
+    // Handle Dynamic integration
+    if (walletType === 'dynamic') {
+      return this.connectDynamic();
+    }
+    
     // Auto-detect if requested
     if (walletType === 'auto') {
       const bestWallet = await this.getBestAvailableWallet();
@@ -249,6 +253,68 @@ export class WalletManager {
    */
   private async connectWalletConnect(): Promise<WalletConnectionResult> {
     throw new Error('WalletConnect integration coming soon. Please use MetaMask or Coinbase Wallet for now.');
+  }
+
+  /**
+   * Connect to Dynamic SDK
+   */
+  private async connectDynamic(): Promise<WalletConnectionResult> {
+    const dynamicContext = this.config.options?.dynamicContext;
+    
+    if (!dynamicContext?.primaryWallet) {
+      throw new Error('Dynamic primaryWallet not found. Make sure Dynamic SDK is initialized and wallet is connected.');
+    }
+
+    const primaryWallet = dynamicContext.primaryWallet;
+    
+    if (!primaryWallet.address) {
+      throw new Error('Dynamic wallet not connected. Please connect a wallet through Dynamic SDK first.');
+    }
+
+    try {
+      // Get the wallet client from Dynamic
+      const dynamicWalletClient = await primaryWallet.connector.getWalletClient();
+      
+      // Create a compatible wallet client for SBC
+      const compatibleWalletClient = createWalletClient({
+        account: toAccount({
+          address: primaryWallet.address as `0x${string}`,
+          async signMessage({ message }) {
+            return await dynamicWalletClient.signMessage({ 
+              message, 
+              account: primaryWallet.address as `0x${string}` 
+            });
+          },
+          async signTransaction(transaction) {
+            return await dynamicWalletClient.signTransaction({ 
+              ...transaction, 
+              account: primaryWallet.address as `0x${string}` 
+            });
+          },
+          async signTypedData(typedData) {
+            return await dynamicWalletClient.signTypedData({ 
+              ...typedData, 
+              account: primaryWallet.address as `0x${string}` 
+            });
+          },
+        }),
+        chain: this.config.chain,
+        transport: custom(dynamicWalletClient.transport)
+      });
+
+      return {
+        walletClient: compatibleWalletClient,
+        wallet: {
+          type: 'dynamic',
+          name: `Dynamic (${primaryWallet.connector.name})`,
+          available: true,
+          provider: dynamicWalletClient,
+        },
+        address: primaryWallet.address as `0x${string}`,
+      };
+    } catch (error) {
+      throw new Error(`Failed to connect Dynamic wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 
