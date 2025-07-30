@@ -62,36 +62,23 @@ export function useSbcDynamic(config: UseSbcDynamicConfig): UseSbcDynamicReturn 
       try {
         setError(null);
         
-        // Wait for Dynamic wallet to be fully ready
-        let retries = 0;
+        // Get Dynamic wallet client - it doesn't need an account property
         let dynamicWalletClient = null;
         
-        while (retries < 10) {
-          try {
-            dynamicWalletClient = await config.primaryWallet.connector.getWalletClient();
-            if (config.debug) {
-              console.log(`[useSbcDynamic] Attempt ${retries + 1}: Dynamic wallet client:`, {
-                hasClient: !!dynamicWalletClient,
-                hasAccount: !!dynamicWalletClient?.account,
-                account: dynamicWalletClient?.account
-              });
-            }
-            if (dynamicWalletClient && dynamicWalletClient.account) {
-              break;
-            }
-          } catch (e) {
-            if (config.debug) {
-              console.log(`[useSbcDynamic] Attempt ${retries + 1}: Wallet client not ready:`, e);
-            }
+        try {
+          dynamicWalletClient = await config.primaryWallet.connector.getWalletClient();
+          if (config.debug) {
+            console.log(`[useSbcDynamic] Dynamic wallet client obtained:`, {
+              hasClient: !!dynamicWalletClient,
+              walletAddress: config.primaryWallet.address
+            });
           }
-          
-          // Wait 500ms before retrying
-          await new Promise(resolve => setTimeout(resolve, 500));
-          retries++;
+        } catch (e) {
+          throw new Error(`Failed to get Dynamic wallet client: ${e instanceof Error ? e.message : 'Unknown error'}`);
         }
         
-        if (!dynamicWalletClient || !dynamicWalletClient.account) {
-          throw new Error('Dynamic wallet client not ready after multiple attempts');
+        if (!dynamicWalletClient) {
+          throw new Error('Dynamic wallet client not available');
         }
         
         // Create SBC AppKit with Dynamic integration

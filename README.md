@@ -7,6 +7,8 @@ Account Abstraction SDK for developers who want gasless transactions but don't w
 For developers who want to use SBC App Kit in their own apps (install from npm):
 
 ```bash
+pnpm add @stablecoin.xyz/react @stablecoin.xyz/core
+# or
 npm install @stablecoin.xyz/react @stablecoin.xyz/core
 ```
 
@@ -33,7 +35,13 @@ For contributors who want to develop or improve the App Kit locally (using works
 git clone https://github.com/stablecoinxyz/app-kit.git
 cd app-kit
 pnpm install
-pnpm run dev:local
+
+# Run specific examples
+pnpm dev:react     # Basic React example
+pnpm dev:wallet    # React with wallet integration
+pnpm dev:dynamic   # React with Dynamic SDK
+pnpm dev:nextjs    # Next.js example
+pnpm dev:backend   # Backend/Node.js example
 ```
 
 - Use the `examples/` directory for advanced usage patterns.
@@ -102,6 +110,40 @@ const {
 - `refreshAccount()`: Refresh account info
 - `disconnectWallet()`: Disconnect wallet
 
+### useSbcDynamic (React Hook)
+
+Simplified hook for Dynamic SDK integration. Automatically handles wallet client creation and SBC initialization.
+
+```js
+const {
+  sbcAppKit,        // SBC App Kit instance
+  isInitialized,    // Whether SDK is ready
+  error,            // Initialization error
+  account,          // Smart account info
+  isLoadingAccount, // Loading state
+  accountError,     // Account error
+  ownerAddress,     // EOA address from Dynamic
+  refreshAccount,   // Refresh account info
+  disconnectWallet, // Disconnect wallet
+} = useSbcDynamic({
+  apiKey: 'your-sbc-api-key',
+  chain: baseSepolia,
+  primaryWallet,    // From useDynamicContext()
+  rpcUrl: 'optional-custom-rpc',
+  debug: true
+})
+```
+
+**Parameters:**
+
+- `apiKey` (string): Your SBC API key
+- `chain` (Chain): Blockchain network (from viem/chains)
+- `primaryWallet` (object): Dynamic's primaryWallet from `useDynamicContext()`
+- `rpcUrl` (string, optional): Custom RPC URL
+- `debug` (boolean, optional): Enable debug logging
+
+**Returns:** Same as `useSbcApp` plus initialization states (`isInitialized`, `error`)
+
 ---
 
 For full documentation, see [API_FULL.md](./API_FULL.md)
@@ -111,6 +153,7 @@ For full documentation, see [API_FULL.md](./API_FULL.md)
 1. **[React Basic](./examples/react-basic)** - Simple demo (learning only)
 2. **[Next.js Backend](./examples/nextjs-backend)** - Secure production pattern
 3. **[React Wallet](./examples/react-wallet)** - User wallet integration
+4. **[React Dynamic](./examples/react-dynamic)** - Dynamic SDK integration
 
 > **Note**: Examples use the `latest` version to showcase the most recent published features. For development, use the `dev:local` scripts to link to workspace packages.
 

@@ -111,6 +111,82 @@ const {
 
 ---
 
+## useSbcDynamic (React Hook)
+
+Simplified hook for Dynamic SDK integration. Automatically handles wallet client creation and SBC initialization.
+
+### Usage
+
+```js
+const {
+  sbcAppKit,        // SBC App Kit instance
+  isInitialized,    // Whether SDK is ready
+  error,            // Initialization error
+  account,          // Smart account info
+  isLoadingAccount, // Loading state
+  accountError,     // Account error
+  ownerAddress,     // EOA address from Dynamic
+  refreshAccount,   // Refresh account info
+  disconnectWallet, // Disconnect wallet
+} = useSbcDynamic({
+  apiKey: 'your-sbc-api-key',
+  chain: baseSepolia,
+  primaryWallet,    // From useDynamicContext()
+  rpcUrl: 'optional-custom-rpc',
+  debug: true
+})
+```
+
+### Parameters
+
+| Name          | Type     | Required | Description |
+|---------------|----------|----------|-------------|
+| apiKey        | string   | Yes      | Your SBC API key |
+| chain         | Chain    | Yes      | Blockchain network (from viem/chains) |
+| primaryWallet | object   | Yes      | Dynamic's primaryWallet from `useDynamicContext()` |
+| rpcUrl        | string   | No       | Custom RPC URL |
+| debug         | boolean  | No       | Enable debug logging |
+
+### Return Values
+
+Returns the same values as `useSbcApp` with additional initialization states:
+
+| Name             | Type         | Description |
+|------------------|-------------|-------------|
+| sbcAppKit        | SbcAppKit/null | SBC App Kit instance (null until initialized) |
+| isInitialized    | boolean      | Whether the SDK is ready to use |
+| error            | Error/null   | Initialization error (if any) |
+| account          | AccountInfo/null | Smart account info |
+| isLoadingAccount | boolean      | Loading state for account info |
+| accountError     | Error/null   | Error loading account info |
+| ownerAddress     | string/null  | EOA address from Dynamic wallet |
+| refreshAccount   | () => Promise<void> | Refresh account info |
+| disconnectWallet | () => void   | Disconnect wallet and clear state |
+
+### Prerequisites
+
+1. Install Dynamic SDK packages:
+
+   ```bash
+   pnpm add @dynamic-labs/sdk-react-core @dynamic-labs/ethereum @dynamic-labs/ethereum-aa
+   ```
+
+2. Wrap app with Dynamic provider:
+
+   ```tsx
+   import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
+   import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
+   
+   <DynamicContextProvider settings={{
+     environmentId: 'your-dynamic-env-id',
+     walletConnectors: [EthereumWalletConnectors],
+   }}>
+     <YourApp />
+   </DynamicContextProvider>
+   ```
+
+---
+
 ## WalletSelector
 
 Component for displaying and selecting from available wallets.

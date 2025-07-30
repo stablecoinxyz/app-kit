@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SbcProvider, useSbcApp, useUserOperation } from '@stablecoin.xyz/react';
+import { useSbcDynamic } from '@stablecoin.xyz/react';
 import { DynamicContextProvider, useDynamicContext, DynamicUserProfile } from '@dynamic-labs/sdk-react-core';
 import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
 import { ZeroDevSmartWalletConnectors } from '@dynamic-labs/ethereum-aa';
@@ -214,8 +214,17 @@ function DynamicWalletStatus({ onDisconnect }: { onDisconnect: () => void }) {
 }
 
 // Smart account info component
-function SmartAccountInfo() {
-  const { account, isInitialized, refreshAccount, isLoadingAccount } = useSbcApp();
+function SmartAccountInfo({ 
+  account, 
+  isLoadingAccount, 
+  accountError, 
+  refreshAccount 
+}: {
+  account: any;
+  isLoadingAccount: boolean;
+  accountError: Error | null;
+  refreshAccount: () => Promise<void>;
+}) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sbcBalance, setSbcBalance] = useState<string | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
@@ -292,7 +301,7 @@ function SmartAccountInfo() {
     }
   };
 
-  if (!isInitialized || !account) {
+  if (!account) {
     return null;
   }
 
@@ -345,15 +354,27 @@ function SmartAccountInfo() {
 }
 
 // Transaction form component
-function TransactionForm() {
-  const { account, sbcAppKit } = useSbcApp();
-  const { sendUserOperation, isLoading, isSuccess, isError, error: opError, data } = useUserOperation();
+function TransactionForm({ 
+  account, 
+  sbcAppKit 
+}: {
+  account: any;
+  sbcAppKit: any;
+}) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('1');
   const isFormValid = recipient && /^0x[a-fA-F0-9]{40}$/.test(recipient) && parseFloat(amount) > 0;
 
   const handleSendTransaction = async () => {
     if (!account || !sbcAppKit) return;
+    
+    setIsLoading(true);
+    setError(null);
+    setData(null);
+    
     try {
       const ownerAddress = sbcAppKit.getOwnerAddress();
       const ownerChecksum = getAddress(ownerAddress);
@@ -361,7 +382,7 @@ function TransactionForm() {
       const value = parseUnits(amount, SBC_DECIMALS(chain));
       const deadline = Math.floor(Date.now() / 1000) + 60 * 30; // 30 min
       
-      // Use the wallet client from SBC Provider (already configured for Dynamic)
+      // Use the wallet client from SBC AppKit (already configured for Dynamic)
       const walletClient = (sbcAppKit as any).walletClient as WalletClient;
       
       const signature = await getPermitSignature({
@@ -376,8 +397,7 @@ function TransactionForm() {
       });
 
       if (!signature) {
-        console.error('Error signing permit transaction');
-        return;
+        throw new Error('Failed to get permit signature');
       }
       const { r, s, v } = parseSignature(signature);
       
@@ -392,14 +412,21 @@ function TransactionForm() {
         args: [ownerChecksum, recipient as `0x${string}`, value],
       });
       
-      await sendUserOperation({
+      const result = await sbcAppKit.sendUserOperation({
         calls: [
           { to: SBC_TOKEN_ADDRESS(chain) as `0x${string}`, data: permitCallData },
           { to: SBC_TOKEN_ADDRESS(chain) as `0x${string}`, data: transferFromCallData },
         ],
       });
+      
+      setData(result);
+      setRecipient('');
+      setAmount('1');
     } catch (err) {
       console.error('Transaction failed:', err);
+      setError(err instanceof Error ? err.message : 'Transaction failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -463,7 +490,7 @@ function TransactionForm() {
         >
           {isLoading ? 'Waiting for signature...' : `Send ${amount} SBC`}
         </button>
-        {isSuccess && data && (
+        {data && (
           <div className="p-3 bg-green-50 border border-green-200 rounded">
             <p className="text-sm text-green-800 font-medium">✅ Transaction Successful!</p>
             <p className="text-xs text-green-600 font-mono break-all mt-1">
@@ -478,10 +505,10 @@ function TransactionForm() {
             </p>
           </div>
         )}
-        {isError && opError && (
+        {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded">
             <p className="text-sm text-red-800 font-medium">❌ Transaction Failed</p>
-            <p className="text-xs text-red-600 mt-1">{opError.message}</p>
+            <p className="text-xs text-red-600 mt-1">{error}</p>
           </div>
         )}
       </div>
@@ -572,81 +599,29 @@ async function getPermitSignature({
   }
 }
 
-// Dynamic SBC Provider wrapper
-function DynamicSbcProvider({ children }: { children: React.ReactNode }) {
-  const { primaryWallet } = useDynamicContext();
-  const [walletClient, setWalletClient] = useState<any>(null);
 
-  // Get Dynamic wallet client when wallet connects
-  useEffect(() => {
-    const getWalletClient = async () => {
-      if (primaryWallet) {
-        try {
-          console.log('Getting Dynamic wallet client for SBC Provider...');
-          const dynamicWalletClient = (await primaryWallet.connector.getWalletClient()) as WalletClient;
-          console.log('Primary wallet address:', primaryWallet.address);
-          
-          // Create a compatible wallet client using primaryWallet.address
-          const compatibleWalletClient = {
-            account: {
-              address: primaryWallet.address as `0x${string}`,
-              type: 'local' as const,
-              // Required methods for LocalAccount
-              signMessage: async ({ message }: { message: string }) => {
-                return await dynamicWalletClient.signMessage({ 
-                  message, 
-                  account: primaryWallet.address as `0x${string}` 
-                });
-              },
-              signTransaction: async (transaction: any) => {
-                return await dynamicWalletClient.signTransaction({ ...transaction, account: primaryWallet.address as `0x${string}` });
-              },
-              signTypedData: async (typedData: any) => {
-                return await dynamicWalletClient.signTypedData({ ...typedData, account: primaryWallet.address as `0x${string}` });
-              },
-            },
-            chain,
-            // Use the original Dynamic wallet client for signing
-            signTypedData: dynamicWalletClient.signTypedData,
-          };
-          
-          console.log('Setting compatible wallet client for SBC Provider');
-          setWalletClient(compatibleWalletClient);
-        } catch (error) {
-          console.error('Failed to get Dynamic wallet client:', error);
-          setWalletClient(null);
-        }
-      } else {
-        setWalletClient(null);
-      }
-    };
-
-    getWalletClient();
-  }, [primaryWallet]);
-
-  // Don't render SbcProvider until we have a wallet client
-  if (!walletClient) {
-    return null;
-  }
-
-  console.log('Creating SbcProvider with wallet client:');
-  console.log('Wallet client account:', walletClient.account);
-
-  return (
-    <SbcProvider config={{
-      apiKey: import.meta.env.VITE_SBC_API_KEY,
-      chain,
-      walletClient,
-      rpcUrl,
-      debug: true
-    }}>
-      {children}
-    </SbcProvider>
-  );
-}
 
 // Main App component
 function DynamicApp() {
+  const { primaryWallet } = useDynamicContext();
+  
+  const {
+    sbcAppKit,
+    isInitialized,
+    error,
+    account,
+    isLoadingAccount,
+    accountError,
+    ownerAddress,
+    refreshAccount,
+    disconnectWallet
+  } = useSbcDynamic({
+    apiKey: import.meta.env.VITE_SBC_API_KEY,
+    chain,
+    primaryWallet,
+    rpcUrl,
+    debug: true
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -663,10 +638,28 @@ function DynamicApp() {
         
         <DynamicConnectFlow />
         
-        <DynamicSbcProvider>
-          <SmartAccountInfo />
-          <TransactionForm />
-        </DynamicSbcProvider>
+        {/* Only show SBC components when wallet is connected and initialized */}
+        {primaryWallet && isInitialized && (
+          <>
+            <SmartAccountInfo 
+              account={account}
+              isLoadingAccount={isLoadingAccount}
+              accountError={accountError}
+              refreshAccount={refreshAccount}
+            />
+            <TransactionForm 
+              account={account}
+              sbcAppKit={sbcAppKit}
+            />
+          </>
+        )}
+        
+        {/* Show error state */}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+            <p className="text-red-800">Error: {error.message}</p>
+          </div>
+        )}
         
         {/* Dynamic User Profile Modal - only render when SDK is ready */}
         <DynamicUserProfileWrapper />
