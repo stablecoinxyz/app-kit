@@ -1,4 +1,11 @@
-import { createWalletClient, custom } from 'viem';
+import {
+  createWalletClient,
+  custom,
+  WalletClient,
+  Address,
+  createPublicClient,
+  http,
+} from 'viem';
 import { toAccount } from 'viem/accounts';
 import type {
   SupportedWalletType,
@@ -99,6 +106,11 @@ export class WalletManager {
     // Handle Dynamic integration
     if (walletType === 'dynamic') {
       return this.connectDynamic();
+    }
+    
+    // Handle Para integration
+    if (walletType === 'para') {
+      return this.connectPara();
     }
     
     // Auto-detect if requested
@@ -298,7 +310,6 @@ export class WalletManager {
           address: primaryWallet.address as `0x${string}`,
           async signMessage({ message }) {
             // For embedded wallets, don't pass the account parameter
-            console.log('signing message', message)
             if (isEmbeddedWallet) {
               return await dynamicWalletClient.signMessage({ message });
             }
@@ -309,7 +320,6 @@ export class WalletManager {
           },
           async signTransaction(transaction) {
             // For embedded wallets, don't pass the account parameter
-            console.log('signing transaction', transaction)
             if (isEmbeddedWallet) {
               return await dynamicWalletClient.signTransaction(transaction);
             }
@@ -320,7 +330,6 @@ export class WalletManager {
           },
           async signTypedData(typedData) {
             // For embedded wallets, don't pass the account parameter
-            console.log('signing typed data', typedData)
             if (isEmbeddedWallet) {
               return await dynamicWalletClient.signTypedData(typedData);
             }
@@ -346,6 +355,101 @@ export class WalletManager {
       };
     } catch (error) {
       throw new Error(`Failed to connect Dynamic wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Connect to Para SDK
+   */
+  private async connectPara(): Promise<WalletConnectionResult> {
+    const paraContext = this.config.options?.paraContext;
+
+    if (!paraContext?.paraWallet) {
+      throw new Error(
+        'Para wallet not found. Make sure Para SDK is initialized and user is authenticated.',
+      );
+    }
+
+    const userAddress =
+      paraContext.user?.embedded?.wallets?.[0]?.address ||
+      paraContext.user?.address;
+
+    if (!userAddress) {
+      throw new Error(
+        'Para user not authenticated. Please authenticate through Para SDK first.',
+      );
+    }
+
+    try {
+      const paraWallet = paraContext.paraWallet;
+
+      // Determine if this is an embedded wallet or external wallet
+      // Para embedded wallets have embedded.wallets array, external wallets don't
+      const isEmbeddedWallet = !!paraContext.user?.embedded?.wallets?.length;
+      
+      // Debug: Log Para wallet information
+      console.log('Para wallet info:', {
+        userAddress,
+        isEmbedded: isEmbeddedWallet,
+        hasEmbeddedWallets: !!paraContext.user?.embedded?.wallets?.length,
+        userType: isEmbeddedWallet ? 'embedded' : 'external'
+      });
+      
+      // Create a compatible wallet client for Para's wallet
+      const compatibleWalletClient = createWalletClient({
+        account: toAccount({
+          address: userAddress as `0x${string}`,
+          async signMessage({ message }) {
+            // Handle embedded vs external wallets differently
+            if (isEmbeddedWallet) {
+              return await paraWallet.signMessage(message);
+            } else {
+              return await paraWallet.signMessage({
+                message,  
+                account: userAddress as `0x${string}`
+              });
+            }
+          },
+          async signTransaction(transaction) {
+            // Handle embedded vs external wallets differently
+            if (isEmbeddedWallet) {
+              return await paraWallet.signTransaction(transaction);
+            } else {
+              return await paraWallet.signTransaction({
+                ...transaction,
+                account: userAddress as `0x${string}`
+              });
+            }
+          },
+          async signTypedData(typedData) {
+            // Handle embedded vs external wallets differently
+            if (isEmbeddedWallet) {
+              return await paraWallet.signTypedData(typedData);
+            } else {
+              return await paraWallet.signTypedData({
+                ...typedData,
+                account: userAddress as `0x${string}`
+              });
+            }
+          },
+        }),
+        chain: this.config.chain,
+        transport: http(this.config.rpcUrl),
+      });
+
+      return {
+        walletClient: compatibleWalletClient,
+        wallet: {
+          type: 'para',
+          name: isEmbeddedWallet ? 'Para Embedded Wallet' : 'Para External Wallet',
+          available: true,
+          provider: paraWallet,
+        },
+        address: userAddress as `0x${string}`,
+      };
+    } catch (error) {
+      throw new Error(
+        `Failed to connect Para wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
