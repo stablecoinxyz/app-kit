@@ -22,6 +22,7 @@
     "dev:wallet": "cd examples/react-wallet && pnpm run dev:local",
     "dev:backend": "cd examples/backend && pnpm run dev:local",
     "dev:dynamic": "cd examples/react-dynamic && pnpm run dev:local",
+    "dev:dynamic:host": "cd examples/react-dynamic && pnpm run dev:host",
     "start:react": "cd examples/react-basic && pnpm run dev",
     "start:nextjs": "cd examples/nextjs-backend && pnpm run dev",
     "start:wallet": "cd examples/react-wallet && pnpm run dev",

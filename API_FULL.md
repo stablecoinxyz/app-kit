@@ -113,7 +113,7 @@ const {
 
 ## useSbcDynamic (React Hook)
 
-Simplified hook for Dynamic SDK integration. Automatically handles wallet client creation and SBC initialization.
+Simplified hook for Dynamic SDK integration. Automatically handles wallet client creation and SBC initialization. Supports both wallet connection and email authentication through Dynamic's unified auth flow.
 
 ### Usage
 

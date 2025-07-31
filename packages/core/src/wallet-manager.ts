@@ -275,23 +275,55 @@ export class WalletManager {
       // Get the wallet client from Dynamic
       const dynamicWalletClient = await primaryWallet.connector.getWalletClient();
       
+      // Debug: Log connector information to understand embedded wallet detection
+      console.log('Dynamic connector info:', {
+        name: primaryWallet.connector.name,
+        type: primaryWallet.connector.type || 'unknown',
+        walletName: primaryWallet.walletName || 'unknown'
+      });
+      
+      // Check if this is an embedded wallet (created via email/social auth)
+      // This detection logic may need adjustment based on actual Dynamic connector names
+      const isEmbeddedWallet = primaryWallet.connector.name === 'embeddedwallet' || 
+                              primaryWallet.connector.name.toLowerCase().includes('embedded') ||
+                              primaryWallet.walletName?.toLowerCase().includes('embedded') ||
+                              primaryWallet.connector.name === 'Turnkey HD' ||
+                              primaryWallet.connector.name.toLowerCase().includes('turnkey');
+      
+      console.log('Is embedded wallet:', isEmbeddedWallet);
+      
       // Create a compatible wallet client for SBC
       const compatibleWalletClient = createWalletClient({
         account: toAccount({
           address: primaryWallet.address as `0x${string}`,
           async signMessage({ message }) {
+            // For embedded wallets, don't pass the account parameter
+            console.log('signing message', message)
+            if (isEmbeddedWallet) {
+              return await dynamicWalletClient.signMessage({ message });
+            }
             return await dynamicWalletClient.signMessage({ 
               message, 
               account: primaryWallet.address as `0x${string}` 
             });
           },
           async signTransaction(transaction) {
+            // For embedded wallets, don't pass the account parameter
+            console.log('signing transaction', transaction)
+            if (isEmbeddedWallet) {
+              return await dynamicWalletClient.signTransaction(transaction);
+            }
             return await dynamicWalletClient.signTransaction({ 
               ...transaction, 
               account: primaryWallet.address as `0x${string}` 
             });
           },
           async signTypedData(typedData) {
+            // For embedded wallets, don't pass the account parameter
+            console.log('signing typed data', typedData)
+            if (isEmbeddedWallet) {
+              return await dynamicWalletClient.signTypedData(typedData);
+            }
             return await dynamicWalletClient.signTypedData({ 
               ...typedData, 
               account: primaryWallet.address as `0x${string}` 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSbcDynamic } from '@stablecoin.xyz/react';
-import { DynamicContextProvider, useDynamicContext, DynamicUserProfile } from '@dynamic-labs/sdk-react-core';
+import { DynamicContextProvider, useDynamicContext, DynamicUserProfile, DynamicWidget } from '@dynamic-labs/sdk-react-core';
 import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
 import { ZeroDevSmartWalletConnectors } from '@dynamic-labs/ethereum-aa';
 import { baseSepolia, base } from 'viem/chains';
@@ -86,9 +86,21 @@ const DynamicUserProfileWrapper = () => {
   return <DynamicUserProfile />;
 };
 
+// Wrapper component to ensure Dynamic SDK is ready before rendering DynamicWidget
+const DynamicWidgetWrapper = () => {
+  const { sdkHasLoaded } = useDynamicContext();
+  
+  // Only render DynamicWidget when SDK has loaded
+  if (!sdkHasLoaded) {
+    return null;
+  }
+  
+  return <DynamicWidget />;
+};
+
 // Dynamic connect flow component
 function DynamicConnectFlow() {
-  const { primaryWallet, setShowAuthFlow, handleLogOut } = useDynamicContext();
+  const { primaryWallet, handleLogOut } = useDynamicContext();
 
   const handleDisconnect = async () => {
     try {
@@ -103,16 +115,11 @@ function DynamicConnectFlow() {
   if (!primaryWallet) {
     return (
       <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect Your Dynamic Wallet</h3>
+        <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect to Dynamic</h3>
         <p className="text-sm text-blue-600 mb-3">
-          Connect your wallet through Dynamic to create a smart account with your wallet as the signer
+          Connect your wallet or sign in with email to create a smart account with Dynamic
         </p>
-        <button
-          onClick={() => setShowAuthFlow(true)}
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-        >
-          Connect Wallet
-        </button>
+        <DynamicWidgetWrapper />
       </div>
     );
   }
@@ -374,7 +381,7 @@ function TransactionForm({
     setIsLoading(true);
     setError(null);
     setData(null);
-    
+
     try {
       const ownerAddress = sbcAppKit.getOwnerAddress();
       const ownerChecksum = getAddress(ownerAddress);
@@ -537,21 +544,30 @@ async function getPermitSignature({
   deadline: number;
 }): Promise<`0x${string}` | null> {
   try {
+    console.log('getPermitSignature: Starting with params:', { owner, spender, value, tokenAddress, chainId, deadline });
+    console.log('getPermitSignature: walletClient type:', typeof walletClient);
+    console.log('getPermitSignature: walletClient methods:', walletClient ? Object.getOwnPropertyNames(walletClient) : 'null');
+    
     const ownerChecksum = getAddress(owner);
     const spenderChecksum = getAddress(spender);
+    console.log('getPermitSignature: Checksummed addresses:', { ownerChecksum, spenderChecksum });
     
+    console.log('getPermitSignature: Fetching nonce...');
     const nonce = await publicClient.readContract({
       address: tokenAddress as `0x${string}`,
       abi: erc20PermitAbi,
       functionName: 'nonces',
       args: [ownerChecksum],
     });
+    console.log('getPermitSignature: Nonce:', nonce);
     
+    console.log('getPermitSignature: Fetching token name...');
     const tokenName = await publicClient.readContract({
       address: tokenAddress as `0x${string}`,
       abi: erc20PermitAbi,
       functionName: 'name',
     });
+    console.log('getPermitSignature: Token name:', tokenName);
     
     const domain = {
       name: tokenName as string,
@@ -584,6 +600,14 @@ async function getPermitSignature({
       deadline: BigInt(deadline),
     };
     
+    console.log('getPermitSignature: About to call signTypedData with:', {
+      account: ownerChecksum,
+      domain,
+      types,
+      primaryType: 'Permit',
+      message,
+    });
+    
     const signature = await walletClient.signTypedData({
       account: ownerChecksum,
       domain,
@@ -592,6 +616,7 @@ async function getPermitSignature({
       message,
     });
 
+    console.log('getPermitSignature: Got signature:', signature);
     return signature;
   } catch (e) {
     console.error('Error in getPermitSignature:', e);

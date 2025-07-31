@@ -112,7 +112,7 @@ const {
 
 ### useSbcDynamic (React Hook)
 
-Simplified hook for Dynamic SDK integration. Automatically handles wallet client creation and SBC initialization.
+Simplified hook for Dynamic SDK integration. Automatically handles wallet client creation and SBC initialization. Supports both wallet connection and email authentication.
 
 ```js
 const {
@@ -153,7 +153,7 @@ For full documentation, see [API_FULL.md](./API_FULL.md)
 1. **[React Basic](./examples/react-basic)** - Simple demo (learning only)
 2. **[Next.js Backend](./examples/nextjs-backend)** - Secure production pattern
 3. **[React Wallet](./examples/react-wallet)** - User wallet integration
-4. **[React Dynamic](./examples/react-dynamic)** - Dynamic SDK integration
+4. **[React Dynamic](./examples/react-dynamic)** - Dynamic SDK integration with wallet & email auth
 
 > **Note**: Examples use the `latest` version to showcase the most recent published features. For development, use the `dev:local` scripts to link to workspace packages.
 

@@ -6,6 +6,8 @@ This example demonstrates how to integrate Dynamic SDK with SBC AppKit for gasle
 
 **Simple Dynamic Integration** - Uses the `useSbcDynamic` hook to automatically handle Dynamic wallet client integration with SBC AppKit. All wallet client complexity is abstracted away.
 
+**Authentication Options** - Supports both wallet connection and email authentication through Dynamic's unified auth flow.
+
 ## Prerequisites
 
 ### Dynamic SDK Setup
@@ -13,6 +15,7 @@ This example demonstrates how to integrate Dynamic SDK with SBC AppKit for gasle
 1. Create a Dynamic account at [Dynamic Dashboard](https://app.dynamic.xyz/)
 2. Get your environment ID from the dashboard
 3. Ensure Base and Base Sepolia are enabled
+4. Enable email authentication in your Dynamic dashboard settings
 
 ### SBC API Key
 
@@ -74,7 +77,7 @@ import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
 import { ZeroDevSmartWalletConnectors } from '@dynamic-labs/ethereum-aa';
 import { useSbcDynamic } from '@stablecoin.xyz/react';
 
-// 1. Dynamic SDK initialization
+// 1. Dynamic SDK initialization with email auth enabled
 <DynamicContextProvider
   settings={{
     environmentId: import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID,
@@ -128,10 +131,29 @@ function App() {
 }
 ```
 
+## Authentication Options
+
+This example supports two authentication methods through Dynamic:
+
+### 1. Wallet Connection
+
+- Connect existing wallets (MetaMask, Coinbase Wallet, etc.)
+- Traditional Web3 wallet authentication
+- Full wallet control and signing capabilities
+
+### 2. Email Authentication  
+
+- Sign in/sign up with email address
+- Dynamic creates and manages wallet automatically
+- Seamless onboarding for non-Web3 users
+- Same smart account functionality as wallet connection
+
+Both methods provide identical SBC AppKit integration and smart account capabilities.
+
 ## Integration Flow
 
-1. **Dynamic SDK Initialization**: DynamicContextProvider wraps the app with wallet connectors
-2. **Wallet Connection**: User connects wallet through Dynamic's interface  
+1. **Dynamic SDK Initialization**: DynamicContextProvider wraps the app with wallet connectors and email auth
+2. **Authentication**: User connects wallet OR signs in with email through Dynamic's unified interface
 3. **Simplified Hook Usage**: `useSbcDynamic` hook handles all wallet client complexity internally
 4. **Automatic SBC Integration**: Hook automatically configures SBC AppKit with Dynamic's wallet
 5. **Smart Account Creation**: SBC creates Kernel smart account with Dynamic wallet as owner
