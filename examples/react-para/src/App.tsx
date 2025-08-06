@@ -173,8 +173,8 @@ function SmartAccountInfo({
   }
 
   return (
-    <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-      <div className="flex justify-between items-center mb-2">
+    <div className="w-full mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+      <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold text-purple-800">🔐 Smart Account Status</h3>
         <button
           onClick={handleRefresh}
@@ -186,15 +186,15 @@ function SmartAccountInfo({
       </div>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-purple-700">Smart Account Address:</span>
+          <span className="text-purple-700 text-xs">Address:</span>
           <span className="font-mono text-xs text-purple-600 break-all">{account.address}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-purple-700">Deployed:</span>
+          <span className="text-purple-700 text-xs">Deployed:</span>
           <span className="text-purple-600">{account.isDeployed ? '✅ Yes' : '⏳ On first transaction'}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-purple-700">Nonce:</span>
+          <span className="text-purple-700 text-xs">Nonce:</span>
           <span className="text-purple-600">{account.nonce}</span>
         </div>
         
@@ -243,14 +243,14 @@ function TransactionForm({
   const isFormValid = recipient && /^0x[a-fA-F0-9]{40}$/.test(recipient) && parseFloat(amount) > 0;
 
   const handleSendTransaction = async () => {
-    if (!account || !sbcAppKit || !paraAccount.isConnected || !paraAccount.embedded?.wallets?.length) return;
+    if (!account || !sbcAppKit || !paraAccount.isConnected || !Object.keys(paraAccount.embedded.wallets || {}).length) return;
     
     setIsLoading(true);
     setError(null);
     setData(null);
 
     try {
-      const walletAddress = paraAccount.embedded?.wallets?.[0]?.address;
+      const walletAddress = paraAccount.embedded.wallets?.[0]?.address;
       if (!walletAddress) {
         throw new Error('No Para wallet address found');
       }
@@ -315,7 +315,7 @@ function TransactionForm({
   if (!account) return null;
 
   return (
-    <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+    <div className="w-full p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
       <h3 className="font-semibold text-gray-800 mb-4">💸 Send SBC Tokens</h3>
       <div className="space-y-4">
         <div>
@@ -502,7 +502,6 @@ async function getPermitSignature({
 // Main App component that uses Para SDK and SBC together
 function ParaApp() {
   const paraAccount = useAccount();
-  
   const {
     sbcAppKit,
     isInitialized,
@@ -514,61 +513,73 @@ function ParaApp() {
   } = useSbcPara({
     apiKey: import.meta.env.VITE_SBC_API_KEY,
     chain,
-    // Pass the Para account to SBC hook for wallet integration
     paraAccount,
     rpcUrl,
     debug: true
   });
 
-  // Check if Para wallet is connected
-  const isParaConnected = paraAccount.isConnected && paraAccount.embedded.wallets?.length;
+  // Check if Para wallet is connected - Para SDK 2.0 might have different structure
+  const isParaConnected = paraAccount.isConnected && paraAccount.embedded?.wallets?.length && paraAccount.embedded.wallets.length > 0;
+  
+  // Debug logging to help troubleshoot
+  console.log('Debug - Para connection check:', {
+    'paraAccount': paraAccount,
+    'paraAccount.isConnected': paraAccount.isConnected,
+    'paraAccount.embedded?.wallets': paraAccount.embedded?.wallets,
+    'isParaConnected': isParaConnected,
+    'isInitialized': isInitialized,
+    'account': account,
+    'sbcAppKit': !!sbcAppKit
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
-            <img src="/sbc-logo.png" alt="SBC Logo" width={36} height={36} />
-            SBC (Para) Integration
-          </h1>
-          <p className="text-gray-600">
-            Gasless transactions with Para Universal Embedded Wallet
-          </p>
-        </div>
-        
-        <ConnectButton />
-        
-        {/* Only show SBC components when Para is connected and SBC is initialized */}
-        {isParaConnected && isInitialized && (
-          <>
-            <SmartAccountInfo 
-              account={account}
-              isLoadingAccount={isLoadingAccount}
-              accountError={accountError}
-              refreshAccount={refreshAccount}
-            />
-            <TransactionForm 
-              account={account}
-              sbcAppKit={sbcAppKit}
-            />
-          </>
-        )}
-        
-        {/* Show error state */}
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-            <p className="text-red-800">Error: {error.message}</p>
+    <div className="fixed inset-0 flex justify-center bg-gray-50">
+      <div className="py-8 w-full overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
+              <img src="/sbc-logo.png" alt="SBC Logo" width={36} height={36} />
+              SBC (Para) Integration
+            </h1>
+            <p className="text-gray-600">
+              Gasless transactions with Para Universal Embedded Wallet
+            </p>
           </div>
-        )}
-        
-        <div className="mt-8 text-center text-xs text-gray-500">
-          <p>
-            Powered by{' '}
-            <a href="https://stablecoin.xyz" className="text-blue-600 hover:underline">
-              SBC AppKit
-            </a>
-            {' '}• Para Universal Embedded Wallet integration
-          </p>
+          
+          <ConnectButton />
+          
+          {/* Only show SBC components when Para is connected and SBC is initialized */}
+          {isParaConnected && isInitialized && (
+            <>
+              <SmartAccountInfo 
+                account={account}
+                isLoadingAccount={isLoadingAccount}
+                accountError={accountError}
+                refreshAccount={refreshAccount}
+              />
+              <TransactionForm 
+                account={account}
+                sbcAppKit={sbcAppKit}
+              />
+            </>
+          )}
+          
+          {/* Show error state */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+              <p className="text-red-800">Error: {error.message}</p>
+            </div>
+          )}
+          
+          <div className="mt-8 text-center text-xs text-gray-500">
+            <p>
+              Powered by{' '}
+              <a href="https://stablecoin.xyz" className="text-blue-600 hover:underline">
+                SBC AppKit
+              </a>
+              {' '}• Para Universal Embedded Wallet integration
+            </p>
+          </div>
         </div>
       </div>
     </div>

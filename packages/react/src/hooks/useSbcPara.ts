@@ -13,6 +13,7 @@ export interface UseSbcParaConfig {
   rpcUrl?: string;
   /** Enable debug logging */
   debug?: boolean;
+
 }
 
 export interface UseSbcParaResult {
@@ -113,9 +114,6 @@ export function useSbcPara(config: UseSbcParaConfig): UseSbcParaResult {
           throw new Error('No Para wallet address found');
         }
 
-        // The paraAccount object from useAccount should contain the wallet client
-        const paraWalletClient = paraAccount;
-
         // Initialize SBC AppKit with Para wallet configuration
         const appKit = new SbcAppKit({
           apiKey,
@@ -124,7 +122,6 @@ export function useSbcPara(config: UseSbcParaConfig): UseSbcParaResult {
           rpcUrl,
           walletOptions: {
             paraContext: {
-              // Pass the entire paraAccount object from the hook
               user: paraAccount,
               paraWallet: paraAccount,
             },

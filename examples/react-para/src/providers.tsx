@@ -13,14 +13,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
           env: Environment.PROD, // Use BETA for development, PROD for production
         }}
         config={{
-          appName: "SBC Para Example"
+          appName: "SBC Para Example",
+          disableAutoSessionKeepAlive: false,
         }}
         externalWalletConfig={{
           wallets: ["METAMASK"],
           walletConnect: { projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "" },
         }}
         paraModalConfig={{
-          logo: "https://swap.stablecoin.xyz/nav-sbc-logo.svg",
+          logo: "/sbc-logo.png",
           theme: { "borderRadius": "md" },
           oAuthMethods: [],
           disablePhoneLogin: true,

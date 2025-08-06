@@ -15,7 +15,7 @@
   "dependencies": {
     "@stablecoin.xyz/core": "workspace:*",
     "@stablecoin.xyz/react": "workspace:*",
-    "@getpara/react-sdk": "alpha",
+    "@getpara/react-sdk": "2.0.0-alpha.39",
     "@tanstack/react-query": "^5.0.0",
     "wagmi": "^2.0.0",
     "viem": "^2.33.0",

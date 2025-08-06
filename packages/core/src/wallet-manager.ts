@@ -400,15 +400,19 @@ export class WalletManager {
         account: toAccount({
           address: userAddress as `0x${string}`,
           async signMessage({ message }) {
-            // Handle embedded vs external wallets differently
-            if (isEmbeddedWallet) {
-              return await paraWallet.signMessage(message);
-            } else {
-              return await paraWallet.signMessage({
-                message,  
-                account: userAddress as `0x${string}`
-              });
+            // Use paraWallet.signMessage if available
+            if (paraWallet.signMessage) {
+              if (isEmbeddedWallet) {
+                return await paraWallet.signMessage(message);
+              } else {
+                return await paraWallet.signMessage({
+                  message,  
+                  account: userAddress as `0x${string}`
+                });
+              }
             }
+            
+            throw new Error('No signing method available for Para wallet');
           },
           async signTransaction(transaction) {
             // Handle embedded vs external wallets differently
@@ -422,15 +426,19 @@ export class WalletManager {
             }
           },
           async signTypedData(typedData) {
-            // Handle embedded vs external wallets differently
-            if (isEmbeddedWallet) {
-              return await paraWallet.signTypedData(typedData);
-            } else {
-              return await paraWallet.signTypedData({
-                ...typedData,
-                account: userAddress as `0x${string}`
-              });
+            // Use paraWallet.signTypedData if available
+            if (paraWallet.signTypedData) {
+              if (isEmbeddedWallet) {
+                return await paraWallet.signTypedData(typedData);
+              } else {
+                return await paraWallet.signTypedData({
+                  ...typedData,
+                  account: userAddress as `0x${string}`
+                });
+              }
             }
+            
+            throw new Error('No typed data signing method available for Para wallet');
           },
         }),
         chain: this.config.chain,
