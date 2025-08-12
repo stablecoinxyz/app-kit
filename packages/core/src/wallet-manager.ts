@@ -5,6 +5,7 @@ import {
   Address,
   createPublicClient,
   http,
+  hashTypedData,
 } from 'viem';
 import { toAccount } from 'viem/accounts';
 import type {
@@ -363,6 +364,7 @@ export class WalletManager {
    */
   private async connectPara(): Promise<WalletConnectionResult> {
     const paraContext = this.config.options?.paraContext;
+    const paraViemClients = paraContext?.paraViemClients;
 
     if (!paraContext?.paraWallet) {
       throw new Error(
@@ -395,8 +397,20 @@ export class WalletManager {
         userType: isEmbeddedWallet ? 'embedded' : 'external'
       });
       
-      // Create a compatible wallet client for Para's wallet
-      const compatibleWalletClient = createWalletClient({
+      // Use Para's official viem client if available, otherwise create our own
+      let compatibleWalletClient;
+      let walletAddress;
+
+      if (paraViemClients?.walletClient && paraViemClients?.account) {
+        // Para SDK 2.0 official viem integration - use their client with full EIP-712 support
+        console.log('Using Para SDK official viem client with native EIP-712 support');
+        compatibleWalletClient = paraViemClients.walletClient;
+        walletAddress = paraViemClients.account.address;
+      } else {
+        // Fallback: Use Para's raw wallet methods (may have limited EIP-712 support)
+        console.log('Using Para fallback wallet client - EIP-712 support may be limited');
+        walletAddress = userAddress;
+        compatibleWalletClient = createWalletClient({
         account: toAccount({
           address: userAddress as `0x${string}`,
           async signMessage({ message }) {
@@ -426,24 +440,83 @@ export class WalletManager {
             }
           },
           async signTypedData(typedData) {
-            // Use paraWallet.signTypedData if available
-            if (paraWallet.signTypedData) {
-              if (isEmbeddedWallet) {
-                return await paraWallet.signTypedData(typedData);
-              } else {
-                return await paraWallet.signTypedData({
-                  ...typedData,
-                  account: userAddress as `0x${string}`
-                });
-              }
-            }
+            console.log('Para fallback signTypedData called with:', typedData);
+            console.log('Available Para wallet methods:', Object.keys(paraWallet));
+            console.log('Para wallet object structure:', paraWallet);
+            console.log('Para wallet signMessage type:', typeof paraWallet.signMessage);
             
-            throw new Error('No typed data signing method available for Para wallet');
+            try {
+              // Base RPC doesn't support eth_signTypedData_v4, so we need to use local signing
+              // Try Para's signTypedData method first (it may do local signing)
+              if (paraWallet.signTypedData) {
+                console.log('Para signTypedData method available, attempting Para native EIP-712 signing');
+                
+                try {
+                  if (isEmbeddedWallet) {
+                    console.log('Attempting Para embedded wallet EIP-712 signing');
+                    return await paraWallet.signTypedData(typedData);
+                  } else {
+                    console.log('Attempting Para external wallet EIP-712 signing');
+                    return await paraWallet.signTypedData({
+                      ...typedData,
+                      account: userAddress as `0x${string}`
+                    });
+                  }
+                } catch (paraSigningError) {
+                  console.log('Para native signTypedData failed:', paraSigningError);
+                  
+                  // If Para's method fails, it might be trying to use RPC too
+                  // Fall through to local signing approach
+                }
+              }
+              
+              // Para's signing methods all use RPC, which Base doesn't support
+              // We need to implement a completely different approach for Base
+              console.log('🚫 Para embedded wallets cannot sign EIP-712 on Base');
+              console.log('Root cause: Para backend makes RPC calls, Base RPC rejects eth_signTypedData_v4');
+              
+              // For Base, Para embedded wallets are incompatible with permit signatures
+              // This is a fundamental limitation of the architecture
+              throw new Error(`Para embedded wallets cannot sign EIP-712 permits on Base networks.
+
+Architecture issue:
+- Base RPC doesn't support eth_signTypedData_v4
+- Para embedded wallets delegate signing to Para backend
+- Para backend calls the RPC endpoint for signing
+- This creates an irreconcilable conflict
+
+Solutions:
+1. Use external wallet (MetaMask) instead of Para embedded wallet
+2. Use Ethereum mainnet instead of Base (supports EIP-712 RPC methods)
+3. Pre-fund smart account and use direct transfers instead of permits
+
+Para embedded wallets work great on networks that support EIP-712 RPC methods, but Base is not one of them.`);
+              
+              throw new Error('Para wallet does not provide any signing methods');
+            } catch (error) {
+              console.error('Para fallback signTypedData error:', error);
+              console.error('Error details:', {
+                errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                errorType: typeof error,
+                paraWalletMethods: Object.keys(paraWallet),
+                isEmbeddedWallet,
+                userAddress,
+                baseRpcLimitation: 'Base RPC does not support eth_signTypedData_v4'
+              });
+              
+              // Provide actionable error message
+              if (error instanceof Error && error.message.includes('Unsupported method: eth_signTypedData_v4')) {
+                throw new Error(`Base blockchain RPC does not support EIP-712 signing (eth_signTypedData_v4). Para wallet cannot sign permits on Base. Use a different chain (Ethereum mainnet) or implement local EIP-712 signing.`);
+              }
+              
+              throw new Error(`Para wallet EIP-712 signing failed: ${error instanceof Error ? error.message : 'Unknown error'}. Root cause: Base RPC doesn't support eth_signTypedData_v4 method.`);
+            }
           },
         }),
         chain: this.config.chain,
         transport: http(this.config.rpcUrl),
       });
+      }
 
       return {
         walletClient: compatibleWalletClient,
@@ -453,7 +526,7 @@ export class WalletManager {
           available: true,
           provider: paraWallet,
         },
-        address: userAddress as `0x${string}`,
+        address: walletAddress as `0x${string}`,
       };
     } catch (error) {
       throw new Error(

@@ -37,9 +37,21 @@ export function ConnectButton() {
   const [balances, setBalances] = useState<{ eth: string | null; sbc: string | null }>({ eth: null, sbc: null });
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
 
+  // Check if external wallet is connected (MetaMask/Coinbase)
+  const isExternalWallet = account.isConnected && account.external?.evm?.address;
+  // Check if embedded wallet is connected (Para embedded)
+  const isEmbeddedWallet = account.isConnected && account.embedded?.wallets && account.embedded.wallets.length > 0;
+  
+  // Get the active wallet address based on connection type
+  const walletAddress = isExternalWallet 
+    ? account.external?.evm?.address 
+    : isEmbeddedWallet 
+      ? account.embedded.wallets?.[0]?.address 
+      : null;
+
   // Fetch balances when wallet connects
   useEffect(() => {
-    if (!account.isConnected || !account.embedded.wallets?.length) {
+    if (!account.isConnected || !walletAddress) {
       setBalances({ eth: null, sbc: null });
       return;
     }
@@ -47,11 +59,6 @@ export function ConnectButton() {
     const fetchBalances = async () => {
       setIsLoadingBalances(true);
       try {
-        const walletAddress = account.embedded.wallets?.[0]?.address;
-        if (!walletAddress) {
-          throw new Error('No wallet address found');
-        }
-
         const [ethBalance, sbcBalance] = await Promise.all([
           publicClient.getBalance({ address: walletAddress as `0x${string}` }),
           publicClient.readContract({
@@ -67,7 +74,7 @@ export function ConnectButton() {
           sbc: sbcBalance.toString(),
         });
       } catch (error) {
-        console.error('Failed to fetch Para wallet balances:', error);
+        console.error('Failed to fetch wallet balances:', error);
         setBalances({ eth: null, sbc: null });
       } finally {
         setIsLoadingBalances(false);
@@ -75,7 +82,7 @@ export function ConnectButton() {
     };
 
     fetchBalances();
-  }, [account.isConnected, account.embedded.wallets]);
+  }, [account.isConnected, walletAddress]);
 
   const formatEthBalance = (balance: string | null): string => {
     if (!balance) return '0.0000';
@@ -91,20 +98,24 @@ export function ConnectButton() {
   
   return (
     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-      {account.isConnected && account.embedded.wallets?.length ? (
+      {account.isConnected && walletAddress ? (
         <div>
-          <h3 className="font-semibold text-green-800 mb-1">✅ Para Wallet Connected</h3>
+          <h3 className="font-semibold text-green-800 mb-1">
+            ✅ {isExternalWallet ? 'External Wallet Connected' : 'Para Wallet Connected'}
+          </h3>
           <p className="text-xs text-green-600 font-mono break-all mb-2">
-            EOA: {account.embedded.wallets[0].address}
+            EOA: {walletAddress}
           </p>
           <p className="text-xs text-green-600 mb-2">
-            Universal Embedded Wallet via Para SDK
+            {isExternalWallet 
+              ? 'External wallet via MetaMask/Coinbase (recommended for Base)' 
+              : 'Universal Embedded Wallet via Para SDK'}
           </p>
           <p className="text-xs text-green-600 mb-2"><strong>Chain:</strong> {chain.name} (ID: {chain.id})</p>
           
           {/* Balance Section */}
           <div className="mt-2 pt-2 border-t border-green-200">
-            <p className="text-xs font-medium text-green-700 mb-1">Embedded Wallet Balances:</p>
+            <p className="text-xs font-medium text-green-700 mb-1">Wallet Balances:</p>
             {isLoadingBalances ? (
               <p className="text-xs text-green-600">Loading balances...</p>
             ) : (
@@ -125,13 +136,15 @@ export function ConnectButton() {
           >
             Manage Wallet
           </button>
+          
+
         </div>
       ) : (
         <div>
           <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect to Para</h3>
           <p className="text-sm text-blue-600 mb-3">
-            Authenticate with Para's universal embedded wallet to create a smart account. 
-            Para provides wallet portability across applications with granular permissions.
+            Connect with MetaMask or Coinbase Wallet for full Base compatibility.
+            Para's external wallet connections provide the best experience on Base.
           </p>
           <button
             onClick={() => openModal()}

@@ -13,6 +13,12 @@ export interface UseSbcParaConfig {
   rpcUrl?: string;
   /** Enable debug logging */
   debug?: boolean;
+  /** Para viem clients from useParaViem hook */
+  paraViemClients?: {
+    publicClient: any;
+    walletClient: any;
+    account: any;
+  } | null;
 
 }
 
@@ -92,11 +98,16 @@ export function useSbcPara(config: UseSbcParaConfig): UseSbcParaResult {
   const [ownerAddress, setOwnerAddress] = useState<string | null>(null);
   const isLoadingRef = useRef(false);
 
-  const { apiKey, chain, paraAccount, rpcUrl, debug = false } = config;
+  const { apiKey, chain, paraAccount, rpcUrl, debug = false, paraViemClients } = config;
+
+  // Check for external or embedded wallet connection
+  const hasExternalWallet = paraAccount.isConnected && paraAccount.external?.evm?.address;
+  const hasEmbeddedWallet = paraAccount.isConnected && paraAccount.embedded?.wallets && paraAccount.embedded.wallets.length > 0;
 
   // Initialize SBC when Para wallet is connected
   useEffect(() => {
-    if (!paraAccount.isConnected || !paraAccount.embedded?.wallets?.length) {
+    
+    if (!paraAccount.isConnected || (!hasExternalWallet && !hasEmbeddedWallet)) {
       setSbcAppKit(null);
       setIsInitialized(false);
       setOwnerAddress(null);
@@ -108,29 +119,31 @@ export function useSbcPara(config: UseSbcParaConfig): UseSbcParaResult {
         setError(null);
         if (debug) console.log('Initializing SBC with Para wallet...');
 
-        const paraWalletAddress = paraAccount.embedded?.wallets?.[0]?.address;
+        // Get wallet address from external or embedded wallet
+        const paraWalletAddress = hasExternalWallet 
+          ? paraAccount.external?.evm?.address 
+          : hasEmbeddedWallet 
+            ? paraAccount.embedded.wallets?.[0]?.address 
+            : null;
         
         if (!paraWalletAddress) {
           throw new Error('No Para wallet address found');
         }
 
-        // Initialize SBC AppKit with Para wallet configuration
+        // Prefer official Para viem v2 wallet client if available.
+        // If not ready yet, wait rather than falling back to SBC's Para path to avoid missing signMessage.
+        if (!paraViemClients?.walletClient || !paraViemClients?.account) {
+          if (debug) console.log('[useSbcPara] Waiting for Para viem wallet client to be ready...');
+          return; // effect will re-run when paraViemClients updates
+        }
+
         const appKit = new SbcAppKit({
           apiKey,
           chain,
-          wallet: 'para',
+          walletClient: paraViemClients.walletClient,
           rpcUrl,
-          walletOptions: {
-            paraContext: {
-              user: paraAccount,
-              paraWallet: paraAccount,
-            },
-          },
+          debug,
         });
-
-        // Connect the wallet so SBC recognizes it as connected
-        if (debug) console.log('Connecting Para wallet to SBC...');
-        await appKit.connectWallet('para');
 
         setSbcAppKit(appKit);
         setOwnerAddress(paraWalletAddress);
@@ -147,7 +160,7 @@ export function useSbcPara(config: UseSbcParaConfig): UseSbcParaResult {
     };
 
     initializeSbc();
-  }, [apiKey, chain, rpcUrl, debug, paraAccount.isConnected, paraAccount.embedded?.wallets?.[0]?.address]);
+  }, [apiKey, chain, rpcUrl, debug, paraAccount.isConnected, hasExternalWallet, hasEmbeddedWallet, paraViemClients?.walletClient, paraViemClients?.account]);
 
   // Load account information when SBC is initialized
   useEffect(() => {

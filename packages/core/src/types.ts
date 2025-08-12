@@ -27,6 +27,12 @@ export interface WalletOptions {
     projectId?: string;
     /** Para user information */
     user?: any;
+    /** Para viem clients from integration package */
+    paraViemClients?: {
+      publicClient: any;
+      walletClient: any;
+      account: any;
+    } | null;
   };
 }
 

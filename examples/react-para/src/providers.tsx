@@ -10,24 +10,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ParaProvider
         paraClientConfig={{
           apiKey: import.meta.env.VITE_PARA_API_KEY,
-          env: Environment.PROD, // Use BETA for development, PROD for production
+          env: Environment.PROD,
         }}
         config={{
           appName: "SBC Para Example",
           disableAutoSessionKeepAlive: false,
         }}
+        // Focus on external wallets (MetaMask) for Base compatibility
         externalWalletConfig={{
-          wallets: ["METAMASK"],
+          wallets: ["METAMASK", "COINBASE"],
           walletConnect: { projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "" },
         }}
         paraModalConfig={{
           logo: "/sbc-logo.png",
           theme: { "borderRadius": "md" },
+          // Prioritize external wallets in the UI
+          authLayout: ["EXTERNAL:FULL", "AUTH:FULL"],
+          // Disable embedded wallet options for Base compatibility
           oAuthMethods: [],
           disablePhoneLogin: true,
-          authLayout: ["AUTH:FULL", "EXTERNAL:FULL"],
-          recoverySecretStepEnabled: true,
-          onRampTestMode: true
+          recoverySecretStepEnabled: false,
+          onRampTestMode: false
         }}
       >
         {children}

@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSbcPara } from '@stablecoin.xyz/react';
-import { useAccount } from '@getpara/react-sdk';
+import { useAccount, useWallet, useSignMessage } from '@getpara/react-sdk';
+import { usePara } from './hooks/usePara';
 import { Providers } from './providers';
 import { ConnectButton } from './components/ConnectButton';
 import { baseSepolia, base } from 'viem/chains';
-import { createPublicClient, http, getAddress, parseSignature, WalletClient, PublicClient, Chain } from 'viem';
+import { createPublicClient, http, getAddress, PublicClient, Chain } from 'viem';
+import { hexToBytes } from 'viem/utils';
 import { parseUnits, encodeFunctionData, erc20Abi } from 'viem';
+import { buildPermitTypedData, hashPermitTypedData, hex32ToBase64, normalizeSignatureToRSV, deriveVForRS } from './utils/permit';
 import './index.css';
 
 // default to baseSepolia, but can be overridden with VITE_CHAIN=base
@@ -42,9 +45,6 @@ const chainExplorer = (chain: Chain) => {
 const publicClient = createPublicClient({ 
   chain, 
   transport: http(rpcUrl),
-  batch: {
-    multicall: true,
-  }
 }) as PublicClient;
 
 const erc20PermitAbi = [
@@ -229,12 +229,14 @@ function SmartAccountInfo({
 // Transaction form component
 function TransactionForm({ 
   account, 
-  sbcAppKit 
+  sbcAppKit
 }: {
   account: any;
   sbcAppKit: any;
 }) {
   const paraAccount = useAccount();
+  const { data: wallet } = useWallet();
+  const signMessageHook = useSignMessage();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
@@ -242,19 +244,25 @@ function TransactionForm({
   const [amount, setAmount] = useState('1');
   const isFormValid = recipient && /^0x[a-fA-F0-9]{40}$/.test(recipient) && parseFloat(amount) > 0;
 
+  // Check if using external wallet (MetaMask/Coinbase) or embedded wallet
+  const isExternalWallet = paraAccount.isConnected && paraAccount.external?.evm?.address;
+  const isEmbeddedWallet = paraAccount.isConnected && paraAccount.embedded?.wallets && paraAccount.embedded.wallets.length > 0;
+  
+  // Get wallet address based on connection type
+  const walletAddress = isExternalWallet 
+    ? paraAccount.external?.evm?.address 
+    : isEmbeddedWallet 
+      ? paraAccount.embedded.wallets?.[0]?.address 
+      : null;
+
   const handleSendTransaction = async () => {
-    if (!account || !sbcAppKit || !paraAccount.isConnected || !Object.keys(paraAccount.embedded.wallets || {}).length) return;
+    if (!account || !sbcAppKit || !paraAccount.isConnected || !walletAddress) return;
     
     setIsLoading(true);
     setError(null);
     setData(null);
 
     try {
-      const walletAddress = paraAccount.embedded.wallets?.[0]?.address;
-      if (!walletAddress) {
-        throw new Error('No Para wallet address found');
-      }
-      
       const ownerChecksum = getAddress(walletAddress);
       const spenderChecksum = getAddress(account.address);
       const value = parseUnits(amount, SBC_DECIMALS(chain));
@@ -263,30 +271,74 @@ function TransactionForm({
       const walletClient = sbcAppKit.getWalletClient();
       
       if (!walletClient) {
-        throw new Error('No wallet client available. Please reconnect your Para wallet.');
+        throw new Error('No wallet client available. Please reconnect your wallet.');
       }
       
-      const signature = await getPermitSignature({
-        publicClient,
-        walletClient,
-        owner: ownerChecksum,
-        spender: spenderChecksum,
-        value,
-        tokenAddress: SBC_TOKEN_ADDRESS(chain),
-        chainId: chain.id,
-        deadline,
+      // We use Para signMessage path exclusively for permit digest
+      
+      console.log('Transaction: Para wallet info:', {
+        walletAddress: walletAddress,
+        isExternalWallet,
+        isEmbeddedWallet,
+        sbcWalletConnected: !!walletClient
       });
-
-      if (!signature) {
-        throw new Error('Failed to get permit signature from Para wallet');
+      
+      // Check wallet balance before proceeding
+      const walletBalance = await publicClient.readContract({
+        address: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
+        abi: erc20PermitAbi,
+        functionName: 'balanceOf',
+        args: [ownerChecksum as `0x${string}`],
+      });
+      
+      if ((walletBalance as bigint) < value) {
+        throw new Error(`Insufficient SBC balance in your wallet.
+        
+Your wallet has: ${(walletBalance as bigint).toString()} SBC tokens
+Amount to send: ${value.toString()} SBC tokens`);
       }
       
-      const { r, s, v } = parseSignature(signature);
-      
+      let result;
+
+      // Build typed data and sign EIP-712 digest via Para signMessage
+      const nonce = await publicClient.readContract({
+        address: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
+        abi: erc20PermitAbi,
+        functionName: 'nonces',
+        args: [ownerChecksum as `0x${string}`],
+      });
+      const tokenName = await publicClient.readContract({
+        address: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
+        abi: erc20PermitAbi,
+        functionName: 'name',
+      });
+      const typed = buildPermitTypedData({
+        tokenName: tokenName as string,
+        chainId: chain.id,
+        tokenAddress: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
+        owner: ownerChecksum as `0x${string}`,
+        spender: spenderChecksum as `0x${string}`,
+        value,
+        nonce: nonce as bigint,
+        deadline: BigInt(deadline),
+      });
+      let r: `0x${string}`; let s: `0x${string}`; let v: number;
+      const digest = hashPermitTypedData(typed);
+      const digestBase64 = hex32ToBase64(digest);
+      if (!wallet?.id) throw new Error('No Para wallet ID');
+      const sigRes = await signMessageHook.signMessageAsync({ walletId: wallet.id, messageBase64: digestBase64 });
+      const paraSig = (sigRes as any)?.signatureBase64 || (sigRes as any)?.signature || (typeof sigRes === 'string' ? sigRes : '');
+      let norm = normalizeSignatureToRSV(paraSig);
+      r = norm.r; s = norm.s; v = norm.v;
+      if (!v || v === 0) {
+        v = await deriveVForRS({ digest, r, s, owner: ownerChecksum as `0x${string}` });
+      }
+
+      const deadlineBigInt = BigInt(deadline);
       const permitCallData = encodeFunctionData({
         abi: permitAbi,
         functionName: 'permit',
-        args: [ownerChecksum, spenderChecksum, value, deadline, v, r, s],
+        args: [ownerChecksum, spenderChecksum, value, deadlineBigInt, v, r, s],
       });
       const transferFromCallData = encodeFunctionData({
         abi: erc20PermitAbi,
@@ -294,7 +346,7 @@ function TransactionForm({
         args: [ownerChecksum, recipient as `0x${string}`, value],
       });
       
-      const result = await sbcAppKit.sendUserOperation({
+      result = await sbcAppKit.sendUserOperation({
         calls: [
           { to: SBC_TOKEN_ADDRESS(chain) as `0x${string}`, data: permitCallData },
           { to: SBC_TOKEN_ADDRESS(chain) as `0x${string}`, data: transferFromCallData },
@@ -314,194 +366,153 @@ function TransactionForm({
 
   if (!account) return null;
 
+
+
   return (
     <div className="w-full p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
       <h3 className="font-semibold text-gray-800 mb-4">💸 Send SBC Tokens</h3>
+      
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Recipient Address
-          </label>
-          <input
-            type="text"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder="0x..."
-            className={`w-full px-3 py-2 text-xs font-mono border rounded-md focus:outline-none focus:ring-2 ${
-              recipient && !isFormValid 
-                ? 'border-red-300 focus:ring-red-500' 
-                : 'border-gray-300 focus:ring-blue-500'
-            }`}
-          />
-          {recipient && !/^0x[a-fA-F0-9]{40}$/.test(recipient) && (
-            <p className="text-xs text-red-600 mt-1">Invalid Ethereum address</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Recipient Address
+            </label>
+            <input
+              type="text"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              placeholder="0x..."
+              className={`w-full px-3 py-2 text-xs font-mono border rounded-md focus:outline-none focus:ring-2 ${
+                recipient && !isFormValid 
+                  ? 'border-red-300 focus:ring-red-500' 
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
+            />
+            {recipient && !/^0x[a-fA-F0-9]{40}$/.test(recipient) && (
+              <p className="text-xs text-red-600 mt-1">Invalid Ethereum address</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Amount (SBC)
+            </label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="1.0"
+              step="0.000001"
+              min="0"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="p-3 bg-gray-50 rounded">
+            <div className="flex justify-between text-sm">
+              <span>Amount:</span>
+              <span className="font-medium">{amount} SBC</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Gas fees:</span>
+              <span>Covered by SBC Paymaster ✨</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Wallet type:</span>
+              <span>{isExternalWallet ? 'External (MetaMask/Coinbase) ✅' : 'Para Embedded'}</span>
+            </div>
+          </div>
+          <button
+            onClick={handleSendTransaction}
+            disabled={!isFormValid || isLoading || !account}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Waiting for signature...' : `Send ${amount} SBC`}
+          </button>
+          {data && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded">
+              <p className="text-sm text-green-800 font-medium">✅ Transaction Successful!</p>
+              <p className="text-xs text-green-600 font-mono break-all mt-1">
+                <a 
+                  href={`${chainExplorer(chain)}/tx/${data.transactionHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  View on BaseScan: {data.transactionHash}
+                </a>
+              </p>
+            </div>
+          )}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded">
+              <p className="text-sm text-red-800 font-medium">❌ Transaction Failed</p>
+              <p className="text-xs text-red-600 mt-1 whitespace-pre-line">{error}</p>
+            </div>
           )}
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Amount (SBC)
-          </label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="1.0"
-            step="0.000001"
-            min="0"
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div className="p-3 bg-gray-50 rounded">
-          <div className="flex justify-between text-sm">
-            <span>Amount:</span>
-            <span className="font-medium">{amount} SBC</span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>Gas fees:</span>
-            <span>Covered by SBC Paymaster ✨</span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>Signing:</span>
-            <span>Your Para wallet will handle signing 🖊️</span>
-          </div>
-        </div>
-        <button
-          onClick={handleSendTransaction}
-          disabled={!isFormValid || isLoading || !account}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? 'Waiting for signature...' : `Send ${amount} SBC`}
-        </button>
-        {data && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded">
-            <p className="text-sm text-green-800 font-medium">✅ Transaction Successful!</p>
-            <p className="text-xs text-green-600 font-mono break-all mt-1">
-              <a 
-                href={`${chainExplorer(chain)}/tx/${data.transactionHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline"
-              >
-                View on BaseScan: {data.transactionHash}
-              </a>
-            </p>
-          </div>
-        )}
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded">
-            <p className="text-sm text-red-800 font-medium">❌ Transaction Failed</p>
-            <p className="text-xs text-red-600 mt-1">{error}</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
 
-// Helper to get permit signature
-async function getPermitSignature({
-  publicClient,
-  walletClient,
-  owner,
-  spender,
-  value,
-  tokenAddress,
-  chainId,
-  deadline,
-}: {
-  publicClient: PublicClient;
-  walletClient: WalletClient;
-  owner: string;
-  spender: string;
-  value: bigint;
-  tokenAddress: string;
-  chainId: number;
-  deadline: number;
-}): Promise<`0x${string}` | null> {
-  try {
-    console.log('getPermitSignature: Starting with params:', { owner, spender, value, tokenAddress, chainId, deadline });
-    console.log('getPermitSignature: walletClient type:', typeof walletClient);
-    console.log('getPermitSignature: walletClient methods:', walletClient ? Object.getOwnPropertyNames(walletClient) : 'null');
-    
-    const ownerChecksum = getAddress(owner);
-    const spenderChecksum = getAddress(spender);
-    console.log('getPermitSignature: Checksummed addresses:', { ownerChecksum, spenderChecksum });
-    
-    console.log('getPermitSignature: Fetching nonce...');
-    const nonce = await publicClient.readContract({
-      address: tokenAddress as `0x${string}`,
-      abi: erc20PermitAbi,
-      functionName: 'nonces',
-      args: [ownerChecksum],
-    });
-    console.log('getPermitSignature: Nonce:', nonce);
-    
-    console.log('getPermitSignature: Fetching token name...');
-    const tokenName = await publicClient.readContract({
-      address: tokenAddress as `0x${string}`,
-      abi: erc20PermitAbi,
-      functionName: 'name',
-    });
-    console.log('getPermitSignature: Token name:', tokenName);
-    
-    const domain = {
-      name: tokenName as string,
-      version: '1',
-      chainId: BigInt(chainId),
-      verifyingContract: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
-    };
-    
-    const types = {
-      EIP712Domain: [
-        { name: 'name', type: 'string' },
-        { name: 'version', type: 'string' },
-        { name: 'chainId', type: 'uint256' },
-        { name: 'verifyingContract', type: 'address' },
-      ],
-      Permit: [
-        { name: 'owner', type: 'address' },
-        { name: 'spender', type: 'address' },
-        { name: 'value', type: 'uint256' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    } as const;
-    
-    const message = {
-      owner: ownerChecksum,
-      spender: spenderChecksum,
-      value: value,
-      nonce: nonce as bigint,
-      deadline: BigInt(deadline),
-    };
-    
-    console.log('getPermitSignature: About to call signTypedData with:', {
-      account: ownerChecksum,
-      domain,
-      types,
-      primaryType: 'Permit',
-      message,
-    });
-    
-    const signature = await walletClient.signTypedData({
-      account: ownerChecksum,
-      domain,
-      types,
-      primaryType: 'Permit',
-      message,
-    });
-
-    console.log('getPermitSignature: Got signature:', signature);
-    return signature;
-  } catch (e) {
-    console.error('Error in getPermitSignature:', e);
-    return null;
-  }
-}
+// (Removed legacy getPermitSignature – replaced by Para signMessage digest approach)
 
 // Main App component that uses Para SDK and SBC together
 function ParaApp() {
   const paraAccount = useAccount();
+  const { publicClient: paraPublicClient, walletClient: paraWalletClient, account: paraAccount_viem } = usePara();
+  const { data: wallet } = useWallet();
+  const signMsg = useSignMessage();
+  
+  // Memoize the paraViemClients object to prevent unnecessary re-renders
+  const wrappedWalletClient = useMemo(() => {
+    if (!paraWalletClient || !paraAccount_viem || !wallet?.id) return null;
+    const base = paraWalletClient as any;
+    const account = {
+      ...paraAccount_viem,
+      async signMessage({ message }: any) {
+        // Normalize message to Uint8Array
+        const toBytes = (m: any): Uint8Array => {
+          if (!m) throw new Error('signMessage: missing message');
+          // Plain string or hex string
+          if (typeof m === 'string') {
+            if (m.startsWith('0x')) return hexToBytes(m as `0x${string}`);
+            return new TextEncoder().encode(m);
+          }
+          // Object with raw/bytes
+          const raw = m.raw ?? m.bytes ?? m.data ?? m;
+          if (typeof raw === 'string') {
+            if (raw.startsWith('0x')) return hexToBytes(raw as `0x${string}`);
+            return new TextEncoder().encode(raw);
+          }
+          if (raw instanceof Uint8Array) return raw;
+          if (raw instanceof ArrayBuffer) return new Uint8Array(raw);
+          if (Array.isArray(raw)) return new Uint8Array(raw);
+          throw new Error('signMessage: unsupported message format');
+        };
+        const rawBytes = toBytes(message);
+        const b64 = btoa(String.fromCharCode(...rawBytes));
+        const res = await signMsg.signMessageAsync({ walletId: wallet.id, messageBase64: b64 });
+        const sig = (res as any)?.signatureBase64 || (res as any)?.signature || (typeof res === 'string' ? res : '');
+        // Return 65-byte hex signature
+        const { r, s, v } = normalizeSignatureToRSV(sig);
+        const vHex = (v < 27 ? v + 27 : v).toString(16).padStart(2, '0');
+        return (r + s.slice(2) + vHex) as `0x${string}`;
+      },
+    };
+    return {
+      ...base,
+      account,
+      async signMessage(args: any) {
+        return account.signMessage(args);
+      },
+    };
+  }, [paraWalletClient, paraAccount_viem, wallet?.id]);
+
+  const paraViemClients = useMemo(() => ({
+    publicClient: paraPublicClient,
+    walletClient: wrappedWalletClient || paraWalletClient,
+    account: paraAccount_viem
+  }), [paraPublicClient, wrappedWalletClient, paraWalletClient, paraAccount_viem]);
+  
   const {
     sbcAppKit,
     isInitialized,
@@ -515,22 +526,15 @@ function ParaApp() {
     chain,
     paraAccount,
     rpcUrl,
-    debug: true
+    debug: true,
+    paraViemClients
   });
 
-  // Check if Para wallet is connected - Para SDK 2.0 might have different structure
-  const isParaConnected = paraAccount.isConnected && paraAccount.embedded?.wallets?.length && paraAccount.embedded.wallets.length > 0;
+  // Check if any Para wallet is connected (external or embedded)
+  const isParaConnected = paraAccount.isConnected && 
+    (paraAccount.external?.evm?.address || (paraAccount.embedded?.wallets && paraAccount.embedded.wallets.length > 0));
   
-  // Debug logging to help troubleshoot
-  console.log('Debug - Para connection check:', {
-    'paraAccount': paraAccount,
-    'paraAccount.isConnected': paraAccount.isConnected,
-    'paraAccount.embedded?.wallets': paraAccount.embedded?.wallets,
-    'isParaConnected': isParaConnected,
-    'isInitialized': isInitialized,
-    'account': account,
-    'sbcAppKit': !!sbcAppKit
-  });
+
 
   return (
     <div className="fixed inset-0 flex justify-center bg-gray-50">
@@ -542,11 +546,12 @@ function ParaApp() {
               SBC (Para) Integration
             </h1>
             <p className="text-gray-600">
-              Gasless transactions with Para Universal Embedded Wallet
+              Gasless transactions with Para Wallet
             </p>
           </div>
           
           <ConnectButton />
+
           
           {/* Only show SBC components when Para is connected and SBC is initialized */}
           {isParaConnected && isInitialized && (
@@ -577,7 +582,8 @@ function ParaApp() {
               <a href="https://stablecoin.xyz" className="text-blue-600 hover:underline">
                 SBC AppKit
               </a>
-              {' '}• Para Universal Embedded Wallet integration
+              {' '}• Para Wallet integration
+              {(paraAccount.isConnected && paraAccount.external?.evm?.address) && ' (External wallet mode)'}
             </p>
           </div>
         </div>
