@@ -12,10 +12,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dynamic-labs/ethereum": "^1.0.0",
-    "@dynamic-labs/ethereum-aa": "^1.0.0",
-    "@dynamic-labs/sdk-react": "^0.18.30",
-    "@dynamic-labs/sdk-react-core": "^1.0.0",
+    "@dynamic-labs/ethereum": "^4.25.7",
+    "@dynamic-labs/ethereum-aa": "^4.25.7",
+    "@dynamic-labs/sdk-react-core": "^4.25.7",
     "@stablecoin.xyz/core": "workspace:*",
     "@stablecoin.xyz/react": "workspace:*",
     "react": "^18.2.0",
