@@ -234,15 +234,31 @@ Ensure your SBC API key is valid and has access to the selected chain.
 {
   "@stablecoin.xyz/core": "workspace:*",
   "@stablecoin.xyz/react": "workspace:*",
-  "@dynamic-labs/sdk-react-core": "^1.0.0",
-  "@dynamic-labs/sdk-react": "^0.18.30",
-  "@dynamic-labs/ethereum": "^1.0.0",
-  "@dynamic-labs/ethereum-aa": "^1.0.0",
-  "viem": "^2.33.0",
+  "@dynamic-labs/ethereum": "^4.25.7",
+  "@dynamic-labs/ethereum-aa": "^4.25.7",
+  "@dynamic-labs/sdk-react-core": "^4.25.7",
   "react": "^18.2.0",
   "react-dom": "^18.2.0",
-  "tailwindcss": "^3.4.17",
+  "viem": "^2.33.0"
+}
+```
+
+### Dev dependencies
+
+```json
+{
+  "@types/react": "^18.2.0",
+  "@types/react-dom": "^18.2.0",
+  "@typescript-eslint/eslint-plugin": "^6.0.0",
+  "@typescript-eslint/parser": "^6.0.0",
+  "@vitejs/plugin-react": "^4.0.0",
   "autoprefixer": "^10.4.0",
-  "postcss": "^8.4.0"
+  "eslint": "^8.0.0",
+  "eslint-plugin-react-hooks": "^4.6.0",
+  "eslint-plugin-react-refresh": "^0.4.0",
+  "postcss": "^8.4.0",
+  "tailwindcss": "^3.4.17",
+  "typescript": "^5.0.0",
+  "vite": "^4.0.0"
 }
 ```
