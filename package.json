@@ -86,5 +86,6 @@
     "@stablecoin.xyz/react": "link:packages/react",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
-  }
+  },
+  "packageManager": "pnpm@10.12.1"
 }
