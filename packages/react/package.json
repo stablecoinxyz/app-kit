@@ -1,6 +1,6 @@
 {
   "name": "@stablecoin.xyz/react",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "React hooks and components for SBC Account Abstraction",
   "type": "module",
   "main": "dist/index.js",
@@ -39,7 +39,7 @@
   "author": "Stable Coin Inc.",
   "license": "MIT",
   "dependencies": {
-    "@stablecoin.xyz/core": "^1.1.0"
+    "@stablecoin.xyz/core": "^1.2.0"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
