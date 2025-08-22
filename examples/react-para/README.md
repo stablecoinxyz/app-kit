@@ -22,6 +22,8 @@ VITE_PARA_API_KEY=your_para_api_key
 VITE_SBC_API_KEY=your_sbc_api_key
 VITE_CHAIN=baseSepolia
 VITE_RPC_URL=https://sepolia.base.org
+# Optional: WalletConnect project ID for external wallets (MetaMask/Coinbase)
+VITE_WALLETCONNECT_PROJECT_ID=your_wc_project_id
 ```
 
 1. Install & run
@@ -50,3 +52,5 @@ pnpm dev
 
 - This example keeps all complexity inside AppKit + a small helper. No typed-data RPC is used; only Para `signMessage` over the precomputed digest.
 - Keep tokens in the EOA? This demo signs a permit to let the smart account spend them, in the same gasless user operation that executes `transferFrom`.
+- By default the Para modal prioritizes external wallets for Base compatibility and disables embedded wallet auth methods. To use embedded wallets, enable the desired `oAuthMethods`/login methods in `providers.tsx` and your Para dashboard.
+- Switch networks via `VITE_CHAIN`: omit or set to anything other than `base` for Base Sepolia (default), set to `base` for Base mainnet. Update `VITE_RPC_URL` accordingly.
