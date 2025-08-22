@@ -1,5 +1,15 @@
 # @stablecoin.xyz/core
 
+## 1.2.0
+
+### Minor Changes
+
+- dfa4bf7: feat: Dynamic wallet integration
+
+  - Add Dynamic wallet support in core `WalletManager` and related types
+  - Add `useSbcDynamic` hook and export from `@stablecoin.xyz/react`
+  - Improve error parsing utilities for clearer UX during failures
+
 ## 1.1.0
 
 ### Minor Changes
@@ -81,5 +91,7 @@
 - 3bad4e7: Add react package with hooks and components
 
 ## [1.1.1]
+
 ### Changed
+
 - Docs-only update: Improved README.md for npmjs.com

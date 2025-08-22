@@ -1,5 +1,23 @@
 # @stablecoin.xyz/react
 
+## 0.5.0
+
+### Minor Changes
+
+- dfa4bf7: feat: Dynamic wallet integration
+
+  - Add Dynamic wallet support in core `WalletManager` and related types
+  - Add `useSbcDynamic` hook and export from `@stablecoin.xyz/react`
+  - Improve error parsing utilities for clearer UX during failures
+
+### Patch Changes
+
+- Updated dependencies [dfa4bf7]
+- Updated dependencies [7f1aea0]
+- Updated dependencies [4560c63]
+- Updated dependencies [87ff47e]
+  - @stablecoin.xyz/core@1.2.0
+
 ## 0.4.0
 
 ### Minor Changes
