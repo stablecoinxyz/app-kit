@@ -9,12 +9,11 @@
     "dev:host": "pnpm link ../../packages/core ../../packages/react && vite --host",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "postinstall": "npx setup-para"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@getpara/react-sdk": "2.0.0-alpha.39",
-    "@getpara/viem-v2-integration": "2.0.0-alpha.39",
+    "@getpara/react-sdk": "2.0.0-alpha.40",
+    "@getpara/viem-v2-integration": "2.0.0-alpha.40",
     "@stablecoin.xyz/core": "workspace:*",
     "@stablecoin.xyz/react": "workspace:*",
     "@tanstack/react-query": "^5.0.0",

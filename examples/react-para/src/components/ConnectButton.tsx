@@ -136,21 +136,18 @@ export function ConnectButton() {
           >
             Manage Wallet
           </button>
-          
-
         </div>
       ) : (
         <div>
           <h3 className="font-semibold text-blue-800 mb-2">🔗 Connect to Para</h3>
           <p className="text-sm text-blue-600 mb-3">
-            Connect with MetaMask or Coinbase Wallet for full Base compatibility.
-            Para's external wallet connections provide the best experience on Base.
+            Connect to a Para Embedded Wallet to start the demo.
           </p>
           <button
             onClick={() => openModal()}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
           >
-            Connect Wallet
+            Connect to Para
           </button>
         </div>
       )}
