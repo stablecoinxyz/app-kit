@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   readonly VITE_WALLETCONNECT_PROJECT_ID: string
   readonly VITE_SBC_API_KEY: string
+  readonly VITE_CHAIN: string
+  readonly VITE_RPC_URL: string
 }
 
 interface ImportMeta {
