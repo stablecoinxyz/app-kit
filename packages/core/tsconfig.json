@@ -4,8 +4,9 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    "declarationDir": "./dist/types",
+    "declarationMap": false,
+    "sourceMap": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },

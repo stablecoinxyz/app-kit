@@ -8,6 +8,8 @@ React bindings for the SBC App Kit – Account Abstraction for gasless transacti
 npm install @stablecoin.xyz/react @stablecoin.xyz/core
 # or
 yarn add @stablecoin.xyz/react @stablecoin.xyz/core
+# or
+pnpm add @stablecoin.xyz/react @stablecoin.xyz/core
 ```
 
 ## Usage Example

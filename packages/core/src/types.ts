@@ -1,7 +1,7 @@
 import { Address, Hex, Chain, WalletClient } from 'viem';
 
 // Wallet Integration Types
-export type SupportedWalletType = 'auto' | 'metamask' | 'coinbase' | 'walletconnect' | 'dynamic' | 'custom';
+export type SupportedWalletType = 'auto' | 'metamask' | 'coinbase' | 'walletconnect' | 'dynamic' | 'para' | 'custom';
 
 export interface WalletOptions {
   /** WalletConnect project ID (required for WalletConnect) */
@@ -18,6 +18,21 @@ export interface WalletOptions {
     primaryWallet?: any;
     /** Dynamic context hook result */
     context?: any;
+  };
+  /** Para SDK context (required for Para integration) */
+  paraContext?: {
+    /** Para wallet instance */
+    paraWallet?: any;
+    /** Para project configuration */
+    projectId?: string;
+    /** Para user information */
+    user?: any;
+    /** Para viem clients from integration package */
+    paraViemClients?: {
+      publicClient: any;
+      walletClient: any;
+      account: any;
+    } | null;
   };
 }
 

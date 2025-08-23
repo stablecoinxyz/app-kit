@@ -435,12 +435,21 @@ export class SbcAppKit {
   }
 
   /**
-   * Get Kernel smart account information
+   * Get the connected wallet client instance
+   * @returns The connected viem WalletClient instance
+   */
+  getWalletClient(): WalletClient | null {
+    return this.walletClient;
+  }
+
+  /**
+   * Get information about the smart account
+   * @returns Smart account address, deployment status, and nonce
    */
   async getAccount(): Promise<AccountInfo> {
     try {
       this.logInfo('getting_account_info');
-      
+
       const smartAccountClient = await this.initializeSmartAccountClient();
       const { account } = smartAccountClient;
       

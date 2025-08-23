@@ -187,6 +187,75 @@ Returns the same values as `useSbcApp` with additional initialization states:
 
 ---
 
+## useSbcPara (React Hook)
+
+Integrate SBC AppKit with Para embedded wallets. Requires Para provider context and the Para account. The hook waits for Para's viem v2 wallet client to be ready and initializes SBC using that client so `signMessage` works for gasless user operations.
+
+### Usage
+
+```tsx
+import { useSbcPara } from '@stablecoin.xyz/react';
+import { ParaProvider, useAccount } from '@getpara/react-sdk';
+import '@getpara/react-sdk/styles.css';
+
+function App() {
+  return (
+    <ParaProvider 
+      paraClientConfig={{ env: 'development', apiKey: 'your-para-api-key' }} 
+      config={{ appName: 'Your App' }}
+    >
+      <Inner />
+    </ParaProvider>
+  );
+}
+
+function Inner() {
+  const paraAccount = useAccount();
+  const { sbcAppKit, isInitialized, error, account, ownerAddress } = useSbcPara({
+    apiKey: 'your-sbc-api-key',
+    chain: baseSepolia,
+    paraAccount
+  });
+  if (!isInitialized) return <div>Initializing...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return <div>Owner: {ownerAddress} — Smart Account: {account?.address}</div>;
+}
+```
+
+### Parameters
+
+| Name            | Type     | Required | Description |
+|-----------------|----------|----------|-------------|
+| apiKey          | string   | Yes      | Your SBC API key |
+| chain           | Chain    | Yes      | Blockchain network (from viem/chains) |
+| paraAccount     | any      | Yes      | Para account object from `useAccount()` |
+| rpcUrl          | string   | No       | Optional custom RPC URL |
+| debug           | boolean  | No       | Enable debug logging |
+| paraViemClients | object   | No       | Advanced: `{ publicClient, walletClient, account }` from Para viem integration |
+
+### Return Values
+
+Same shape as `useSbcApp` with Para-specific owner address:
+
+| Name             | Type                | Description |
+|------------------|---------------------|-------------|
+| sbcAppKit        | SbcAppKit/null      | SBC App Kit instance |
+| isInitialized    | boolean             | Whether SBC is ready |
+| error            | Error/null          | Initialization error |
+| account          | AccountInfo/null    | Smart account info |
+| isLoadingAccount | boolean             | Loading state for account info |
+| accountError     | Error/null          | Error loading account info |
+| ownerAddress     | string/null         | Para wallet EOA address |
+| refreshAccount   | () => Promise<void> | Refresh account info |
+| disconnectWallet | () => Promise<void> | Disconnect and cleanup |
+
+### Notes
+
+- The hook prefers Para's official viem v2 wallet client. It will wait until `walletClient` is available rather than falling back, ensuring `signMessage` covers EIP-712 digests for gasless flows.
+- See the [React Para example](./examples/react-para) for a complete, runnable demo with permit + transfer in a single gasless user operation.
+
+---
+
 ## WalletSelector
 
 Component for displaying and selecting from available wallets.

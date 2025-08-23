@@ -1,12 +1,13 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import typescript from '@rollup/plugin-typescript';
+import esbuild from 'rollup-plugin-esbuild';
 import dts from 'rollup-plugin-dts';
 import { readFileSync } from 'fs';
 
 const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
 
 export default [
+  // JS bundles (transpile-only via esbuild)
   {
     input: 'src/index.ts',
     onwarn(warning, warn) {
@@ -14,12 +15,6 @@ export default [
       if (warning.code === 'CIRCULAR_DEPENDENCY' && 
           (warning.ids?.some(id => id.includes('node_modules/viem')) || 
            warning.message?.includes('node_modules/viem'))) {
-        return;
-      }
-      
-      // Suppress TypeScript override warnings from permissionless
-      if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'typescript' && 
-          warning.message?.includes('override') && warning.loc?.file?.includes('node_modules/permissionless')) {
         return;
       }
       
@@ -46,12 +41,12 @@ export default [
         preferBuiltins: true,
       }),
       commonjs(),
-      typescript({
+      esbuild({
+        sourceMap: false,
+        minify: false,
+        target: 'es2020',
+        jsx: 'automatic',
         tsconfig: './tsconfig.json',
-        declaration: true,
-        declarationDir: './dist',
-        exclude: ['node_modules/**'],
-        filterRoot: './src'
       }),
     ],
     external: [
@@ -59,5 +54,19 @@ export default [
       'permissionless',
       ...Object.keys(packageJson.peerDependencies || {}),
     ],
+  },
+  // Type bundle (builds index.d.ts without type-checking node_modules)
+  {
+    input: 'src/index.ts',
+    output: [{ file: packageJson.types, format: 'es' }],
+    plugins: [
+      dts({
+        respectExternal: true,
+        compilerOptions: {
+          skipLibCheck: true,
+        },
+      })
+    ],
+    external: [/^viem/, /^permissionless/, /^ox/],
   },
 ];

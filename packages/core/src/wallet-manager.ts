@@ -1,4 +1,7 @@
-import { createWalletClient, custom } from 'viem';
+import {
+  createWalletClient,
+  custom,
+} from 'viem';
 import { toAccount } from 'viem/accounts';
 import type {
   SupportedWalletType,
@@ -99,6 +102,11 @@ export class WalletManager {
     // Handle Dynamic integration
     if (walletType === 'dynamic') {
       return this.connectDynamic();
+    }
+    
+    // Handle Para integration
+    if (walletType === 'para') {
+      return this.connectPara();
     }
     
     // Auto-detect if requested
@@ -298,7 +306,6 @@ export class WalletManager {
           address: primaryWallet.address as `0x${string}`,
           async signMessage({ message }) {
             // For embedded wallets, don't pass the account parameter
-            console.log('signing message', message)
             if (isEmbeddedWallet) {
               return await dynamicWalletClient.signMessage({ message });
             }
@@ -309,7 +316,6 @@ export class WalletManager {
           },
           async signTransaction(transaction) {
             // For embedded wallets, don't pass the account parameter
-            console.log('signing transaction', transaction)
             if (isEmbeddedWallet) {
               return await dynamicWalletClient.signTransaction(transaction);
             }
@@ -320,7 +326,6 @@ export class WalletManager {
           },
           async signTypedData(typedData) {
             // For embedded wallets, don't pass the account parameter
-            console.log('signing typed data', typedData)
             if (isEmbeddedWallet) {
               return await dynamicWalletClient.signTypedData(typedData);
             }
@@ -347,6 +352,35 @@ export class WalletManager {
     } catch (error) {
       throw new Error(`Failed to connect Dynamic wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Connect to Para SDK
+   */
+  private async connectPara(): Promise<WalletConnectionResult> {
+    const paraContext = this.config.options?.paraContext;
+    const paraViemClients = paraContext?.paraViemClients;
+
+    if (!paraContext?.paraWallet) {
+      throw new Error('Para wallet not found. Initialize Para SDK and ensure the user is authenticated.');
+    }
+
+    if (!paraViemClients?.walletClient || !paraViemClients?.account) {
+      throw new Error('Para viem wallet client not ready. Use @getpara/viem-v2-integration to provide { walletClient, account }');
+    }
+
+    const address = paraViemClients.account.address as `0x${string}`;
+
+    return {
+      walletClient: paraViemClients.walletClient,
+      wallet: {
+        type: 'para',
+        name: 'Para Wallet',
+        available: true,
+        provider: paraContext.paraWallet,
+      },
+      address,
+    };
   }
 }
 
