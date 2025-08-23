@@ -1,5 +1,34 @@
 # @stablecoin.xyz/react
 
+## 0.5.1
+
+### Patch Changes
+
+- e10679a: docs: update for Para embedded wallet integration and pnpm-only installs
+
+  - Add `useSbcPara` hook documentation to API_FULL.md
+  - Update root README to include React Para example and dev scripts
+  - Switch READMEs to pnpm-only install commands
+  - Mention Para integration in React package README and link to example
+
+  Note: Docs-only changes; no runtime behavior modifications.
+
+- a50f3e3: feat(core): simplify Para integration to require Para viem clients
+
+  - Remove fallback EIP-712/typed-data logic in wallet manager
+  - Use provided Para viem walletClient/account directly
+
+  chore(build): use esbuild for JS bundles and rollup-plugin-dts for types
+
+  - Faster transpile-only builds (no node_modules type-checking)
+  - Generate `dist/index.d.ts` via dts plugin
+
+  docs(examples): clarify react-para README; remove unused context dir
+
+- Updated dependencies [e10679a]
+- Updated dependencies [a50f3e3]
+  - @stablecoin.xyz/core@1.3.0
+
 ## 0.5.0
 
 ### Minor Changes
