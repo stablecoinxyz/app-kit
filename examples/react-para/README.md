@@ -36,7 +36,7 @@ pnpm dev
 1. Connect Para wallet, enter recipient and amount (SBC), click “Send”.
 
 ## What changed
- 
+
 - Removed eth_signTypedData_v4 usage (Base blocks it). We hash EIP‑712 locally and sign the digest via Para `signMessage`.
 - Added `utils/permit.ts` with typed-data helpers and robust signature normalization (hex/base64/DER) plus `deriveVForRS` to compute `v` when missing.
 - SBC initialization now waits for the Para viem wallet client and uses it directly (no fallback connect path).
