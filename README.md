@@ -27,6 +27,8 @@ const config = {
 </SbcProvider>
 ```
 
+To run examples from the repo, follow the Contributor Quickstart below.
+
 ## Contributor Quickstart
 
 For contributors who want to develop or improve the App Kit locally (using workspace packages):
@@ -36,6 +38,9 @@ git clone https://github.com/stablecoinxyz/app-kit.git
 cd app-kit
 pnpm install
 
+
+pnmp build         # Build app-kit locally
+
 # Run specific examples
 pnpm dev:react     # Basic React example
 pnpm dev:wallet    # React with wallet integration
@@ -43,6 +48,12 @@ pnpm dev:dynamic   # React with Dynamic SDK
 pnpm dev:nextjs    # Next.js example
 pnpm dev:backend   # Backend/Node.js example
 pnpm dev:para      # React with Para embedded wallet
+
+# Syncing future updates
+git pull
+pnpm clean         # Removes dependencies and all artifacts
+pnpm install
+pnpm build         # Now you're ready to run specifc examples from the root dir (e.g. pnpm dev:react)
 ```
 
 - Use the `examples/` directory for advanced usage patterns.
