@@ -1,6 +1,7 @@
 import { SbcAppKit } from '../app-kit';
 import { SbcAppKitConfig } from '../types';
 import { base, baseSepolia } from 'viem/chains';
+import { radiusTestnet } from '../lib/radius-network';
 import { Chain } from 'viem';
 
 // Mock external dependencies
@@ -24,6 +25,7 @@ jest.mock('viem', () => ({
   http: jest.fn(),
   custom: jest.fn(),
   parseEther: jest.fn((val) => BigInt(val) * BigInt(10**18)),
+  defineChain: jest.fn((chain) => chain),
 }));
 
 jest.mock('viem/accounts', () => ({
@@ -59,12 +61,22 @@ jest.mock('permissionless/accounts', () => ({
   }))
 }));
 
+jest.mock('../lib/radius-simple-account', () => ({
+  toRadiusSimpleSmartAccount: jest.fn(() => Promise.resolve({
+    address: '0xabcdef1234567890abcdef1234567890abcdef12',
+    getNonce: jest.fn().mockResolvedValue(3),
+    entryPoint: {
+      address: '0x9b443e4bd122444852B52331f851a000164Cc83F',
+      version: '0.7'
+    }
+  })),
+  RADIUS_ENTRY_POINT_ADDRESS: '0x9b443e4bd122444852B52331f851a000164Cc83F',
+  RADIUS_SIMPLE_ACCOUNT_FACTORY_ADDRESS: '0x4DEbDe0Be05E51432D9afAf61D84F7F0fEA63495'
+}));
+
 jest.mock('permissionless', () => ({
-  createSmartAccountClient: jest.fn(() => ({
-    account: {
-      address: '0x9876543210987654321098765432109876543210',
-      getNonce: jest.fn().mockResolvedValue(5),
-    },
+  createSmartAccountClient: jest.fn((config: any) => ({
+    account: config.account, // Use the account that was passed in
     sendUserOperation: jest.fn().mockResolvedValue('0xuser-op-hash'),
     waitForUserOperationReceipt: jest.fn().mockResolvedValue({
       receipt: {
@@ -74,7 +86,7 @@ jest.mock('permissionless', () => ({
       }
     }),
     prepareUserOperation: jest.fn().mockResolvedValue({
-      sender: '0x9876543210987654321098765432109876543210',
+      sender: config.account.address,
       nonce: 5n,
       callData: '0x1234',
       callGasLimit: 150000n,
@@ -775,6 +787,93 @@ describe('SbcAppKit', () => {
 
       const kit = new SbcAppKit(config);
       expect(kit.getChain()).toBe(baseSepolia);
+    });
+
+    it('should support Radius Testnet', () => {
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: radiusTestnet
+      };
+
+      const kit = new SbcAppKit(config);
+      expect(kit.getChain()).toBe(radiusTestnet);
+      expect(kit.getChainConfig().id).toBe(1223953);
+    });
+
+    it('should initialize Radius Testnet with custom EntryPoint', async () => {
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: radiusTestnet
+      };
+
+      const kit = new SbcAppKit(config);
+      await kit.connectWallet('metamask');
+
+      const account = await kit.getAccount();
+      // Should use Radius-specific address
+      expect(account.address).toBe('0xabcdef1234567890abcdef1234567890abcdef12');
+    });
+
+    it('should use Radius SimpleAccount for Radius Testnet', async () => {
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const { toRadiusSimpleSmartAccount } = require('../lib/radius-simple-account');
+      const { toKernelSmartAccount } = require('permissionless/accounts');
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: radiusTestnet
+      };
+
+      const kit = new SbcAppKit(config);
+      await kit.connectWallet('metamask');
+
+      // Should call toRadiusSimpleSmartAccount for Radius, not toKernelSmartAccount
+      expect(toRadiusSimpleSmartAccount).toHaveBeenCalled();
+      expect(toKernelSmartAccount).not.toHaveBeenCalled();
+    });
+
+    it('should use Kernel account for Base chains, not Radius account', async () => {
+      const mockAccounts = ['0x1234567890123456789012345678901234567890'];
+      (global as any).window = {
+        ethereum: {
+          isMetaMask: true,
+          request: jest.fn().mockResolvedValue(mockAccounts)
+        }
+      };
+
+      const { toRadiusSimpleSmartAccount } = require('../lib/radius-simple-account');
+      const { toKernelSmartAccount } = require('permissionless/accounts');
+
+      // Clear previous calls
+      toRadiusSimpleSmartAccount.mockClear();
+      toKernelSmartAccount.mockClear();
+
+      const config: SbcAppKitConfig = {
+        apiKey: 'sbc-test123456',
+        chain: base
+      };
+
+      const kit = new SbcAppKit(config);
+      await kit.connectWallet('metamask');
+
+      // Should call toKernelSmartAccount for Base, not toRadiusSimpleSmartAccount
+      expect(toKernelSmartAccount).toHaveBeenCalled();
+      expect(toRadiusSimpleSmartAccount).not.toHaveBeenCalled();
     });
   });
 

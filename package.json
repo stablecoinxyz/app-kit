@@ -25,6 +25,8 @@
     "dev:dynamic:host": "cd examples/react-dynamic && pnpm run dev:host",
     "dev:para": "cd examples/react-para && pnpm run dev:local",
     "dev:para:host": "cd examples/react-para && pnpm run dev:host",
+    "dev:radius": "cd examples/react-radius && pnpm run dev:local",
+    "dev:radius:host": "cd examples/react-radius && pnpm run dev:host",
     "start:react": "cd examples/react-basic && pnpm run dev",
     "start:nextjs": "cd examples/nextjs-backend && pnpm run dev",
     "start:wallet": "cd examples/react-wallet && pnpm run dev",

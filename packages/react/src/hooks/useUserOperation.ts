@@ -40,6 +40,12 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
   const sendUserOperation = useCallback(async (params: SendUserOperationParams): Promise<UserOperationResult | undefined> => {
     if (!sbcAppKit || !isInitialized) {
       const error = new Error('SBC App Kit is not initialized');
+
+      // Log to console if debug mode is enabled
+      if (sbcAppKit && (sbcAppKit as any).debug) {
+        console.error('[SBC App Kit] Cannot send user operation: SDK not initialized');
+      }
+
       setError(error);
       setIsError(true);
       onError?.(error);
@@ -53,7 +59,7 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
       setIsSuccess(false);
 
       const result = await sbcAppKit.sendUserOperation(params);
-      
+
       setData(result);
       setIsSuccess(true);
       onSuccess?.(result);
@@ -66,6 +72,13 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
       return result;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to send user operation');
+
+      // Log to console if debug mode is enabled
+      if ((sbcAppKit as any).debug) {
+        console.error('[SBC App Kit] User operation failed:', error);
+        console.error('[SBC App Kit] Params:', params);
+      }
+
       setError(error);
       setIsError(true);
       setData(null);
@@ -79,6 +92,12 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
   const estimateUserOperation = useCallback(async (params: SendUserOperationParams): Promise<UserOperationEstimate | undefined> => {
     if (!sbcAppKit || !isInitialized) {
       const error = new Error('SBC App Kit is not initialized');
+
+      // Log to console if debug mode is enabled
+      if (sbcAppKit && (sbcAppKit as any).debug) {
+        console.error('[SBC App Kit] Cannot estimate user operation: SDK not initialized');
+      }
+
       setError(error);
       setIsError(true);
       onError?.(error);
@@ -89,6 +108,13 @@ export function useUserOperation(options: UseUserOperationOptions = {}): UseUser
       return await sbcAppKit.estimateUserOperation(params);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to estimate user operation');
+
+      // Log to console if debug mode is enabled
+      if ((sbcAppKit as any).debug) {
+        console.error('[SBC App Kit] Gas estimation failed:', error);
+        console.error('[SBC App Kit] Params:', params);
+      }
+
       setError(error);
       setIsError(true);
       onError?.(error);

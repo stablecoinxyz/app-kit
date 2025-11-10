@@ -32,3 +32,21 @@ export {
 
 // Optional logging adapters - import only what you need
 export * from './logging-adapters';
+
+// Radius Network support
+export {
+  radiusTestnet,
+  TestSBC_CONTRACT_ADDRESS,
+  RADIUS_TESTNET_ENTRY_POINT,
+  RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY
+} from './lib/radius-network';
+
+export {
+  toRadiusSimpleSmartAccount,
+} from './lib/radius-simple-account';
+
+export type {
+  ToRadiusSimpleSmartAccountParameters,
+  ToRadiusSimpleSmartAccountReturnType,
+  RadiusSimpleSmartAccountImplementation
+} from './lib/radius-simple-account';

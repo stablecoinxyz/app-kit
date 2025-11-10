@@ -1,5 +1,6 @@
 import { getChainConfig, buildAaProxyUrl, validateApiKey, formatError, decodeRevertReason, parseUserOperationError } from '../utils';
 import { base, baseSepolia } from 'viem/chains';
+import { radiusTestnet } from '../lib/radius-network';
 import { Chain } from 'viem';
 
 // Create a proper unsupported chain type for testing
@@ -26,6 +27,15 @@ describe('Utils Functions', () => {
       expect(sepoliaConfig.name).toBe('Base Sepolia');
     });
 
+    it('should return config for radiusTestnet chain', () => {
+      const radiusConfig = getChainConfig(radiusTestnet);
+      expect(radiusConfig.id).toBe(1223953);
+      expect(radiusConfig.name).toBe('Radius Testnet');
+      expect(radiusConfig.idString).toBe('radiusTestnet');
+      expect(radiusConfig.rpcUrl).toBe('https://rpc.testnet.radiustech.xyz');
+      expect(radiusConfig.blockExplorerUrl).toBe('https://testnet.radiustech.xyz/testnet/explorer');
+    });
+
     it('should throw error for unsupported chain', () => {
       const unsupportedChain = createUnsupportedChain(999, 'Unsupported');
       expect(() => getChainConfig(unsupportedChain)).toThrow();
@@ -41,6 +51,16 @@ describe('Utils Functions', () => {
     it('should build URL with staging flag', () => {
       const url = buildAaProxyUrl({ chain: baseSepolia, apiKey: 'sbc-test123', staging: true });
       expect(url).toBe('https://api.aa.stablecoin.xyz/rpc/v1/baseSepolia/sbc-test123?staging=true');
+    });
+
+    it('should build URL for radius testnet', () => {
+      const url = buildAaProxyUrl({ chain: radiusTestnet, apiKey: 'sbc-test123' });
+      expect(url).toBe('https://api.aa.stablecoin.xyz/rpc/v1/radiusTestnet/sbc-test123');
+    });
+
+    it('should build URL for radius testnet with staging flag', () => {
+      const url = buildAaProxyUrl({ chain: radiusTestnet, apiKey: 'sbc-test123', staging: true });
+      expect(url).toBe('https://api.aa.stablecoin.xyz/rpc/v1/radiusTestnet/sbc-test123?staging=true');
     });
 
     it('should throw error for unsupported chain', () => {

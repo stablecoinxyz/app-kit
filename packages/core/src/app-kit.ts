@@ -2,6 +2,7 @@ import { Address, PublicClient, WalletClient, http, LocalAccount } from 'viem';
 import { entryPoint07Address, createPaymasterClient } from 'viem/account-abstraction';
 import { toKernelSmartAccount } from 'permissionless/accounts';
 import { createSmartAccountClient, SmartAccountClient } from 'permissionless';
+import { toRadiusSimpleSmartAccount } from './lib/radius-simple-account';
 import {
   SbcAppKitConfig,
   UserOperationParams,
@@ -265,8 +266,8 @@ export class SbcAppKit {
   }
 
   /**
-   * Initialize the Smart Account client using SBC's infrastructure. 
-   * Currently using Kernel Smart Account from ZeroDev.
+   * Initialize the Smart Account client using SBC's infrastructure.
+   * Uses Kernel Smart Account for Base/Base Sepolia and SimpleAccount for Radius Testnet.
    */
   private async initializeSmartAccountClient(): Promise<SmartAccountClient> {
     if (this.smartAccountClient) {
@@ -282,27 +283,73 @@ export class SbcAppKit {
     try {
       this.logInfo('initializing_smart_account_client');
 
-      // Create Kernel account following SBC documentation
-      this.logInfo('creating_kernel_account');
-      const kernelAccount = await toKernelSmartAccount({
-        client: this.publicClient,
-        owners: [this.walletClient.account as LocalAccount],
-        entryPoint: {
-          address: entryPoint07Address,
-          version: "0.7",
-        },
-        version: "0.3.1"
+      // Check if using Radius Testnet (requires custom EntryPoint and Factory)
+      const isRadiusTestnet = this.config.chain.id === 1223953;
+
+      this.logInfo('chain_detection', {
+        chainId: this.config.chain.id,
+        chainName: this.config.chain.name,
+        isRadiusTestnet
       });
 
-      // Create paymaster and smart account clients
-      this.logInfo('creating_paymaster_client', { aaProxyUrl: this.aaProxyUrl });
+      let smartAccount;
+
+      if (isRadiusTestnet) {
+        // Use Radius-specific SimpleAccount implementation
+        this.logInfo('radius_account_creation_starting', {
+          message: 'Using Radius Testnet custom EntryPoint and Factory',
+          owner: this.walletClient.account.address
+        });
+
+        smartAccount = await toRadiusSimpleSmartAccount({
+          client: this.publicClient,
+          owner: this.walletClient.account as LocalAccount,
+        });
+
+        this.logInfo('radius_account_created', {
+          accountAddress: smartAccount.address,
+          entryPoint: smartAccount.entryPoint.address,
+          entryPointVersion: smartAccount.entryPoint.version
+        });
+      } else {
+        // Use standard Kernel account for other chains (Base, Base Sepolia)
+        this.logInfo('creating_kernel_account', {
+          message: 'Using standard Kernel Smart Account',
+          owner: this.walletClient.account.address
+        });
+
+        smartAccount = await toKernelSmartAccount({
+          client: this.publicClient,
+          owners: [this.walletClient.account as LocalAccount],
+          entryPoint: {
+            address: entryPoint07Address,
+            version: "0.7",
+          },
+          version: "0.3.1"
+        });
+
+        this.logInfo('kernel_account_created', {
+          accountAddress: smartAccount.address,
+          entryPoint: entryPoint07Address
+        });
+      }
+
+      // Create paymaster and smart account clients (same for both)
+      this.logInfo('creating_paymaster_client', {
+        aaProxyUrl: this.aaProxyUrl,
+        accountType: isRadiusTestnet ? 'radius-simple' : 'kernel'
+      });
+
       const paymaster = createPaymasterClient({
         transport: http(this.aaProxyUrl),
       });
 
-      this.logInfo('creating_smart_account_client');
+      this.logInfo('creating_smart_account_client', {
+        accountType: isRadiusTestnet ? 'radius-simple' : 'kernel'
+      });
+
       this.smartAccountClient = createSmartAccountClient({
-        account: kernelAccount,
+        account: smartAccount,
         chain: this.config.chain,
         bundlerTransport: http(this.aaProxyUrl),
         paymaster,
@@ -318,14 +365,21 @@ export class SbcAppKit {
       });
 
       this.logInfo('smart_account_client_initialized', {
-        accountAddress: kernelAccount.address
+        accountAddress: smartAccount.address,
+        accountType: isRadiusTestnet ? 'radius-simple' : 'kernel',
+        chainId: this.config.chain.id,
+        chainName: this.config.chain.name
       });
 
       return this.smartAccountClient;
-      
+
     } catch (error) {
       const message = formatError(error);
-      this.logError('smart_account_initialization_failed', { error: message });
+      this.logError('smart_account_initialization_failed', {
+        error: message,
+        chainId: this.config.chain.id,
+        chainName: this.config.chain.name
+      });
       throw new Error(`Failed to initialize smart account: ${message}`);
     }
   }
@@ -400,30 +454,59 @@ export class SbcAppKit {
   async sendUserOperation(params: SendUserOperationParams): Promise<UserOperationResult> {
     try {
       this.logInfo('sending_user_operation', { isBatch: this.isBatchOperation(params) });
-      
+
       const smartAccountClient = await this.initializeSmartAccountClient();
-      
+
       // Convert params to calls array and validate
       const calls = this.normalizeToCalls(params);
       this.logInfo('normalized_calls', { callsCount: calls.length });
-      
+
+      // Radius Testnet requires explicit gas limits to avoid estimation issues
+      const isRadiusTestnet = this.config.chain.id === 1223953;
+      const gasLimits = isRadiusTestnet ? {
+        callGasLimit: 300000n,
+        verificationGasLimit: 300000n,
+        preVerificationGas: 100000n,
+      } : {};
+
+      if (isRadiusTestnet) {
+        this.logInfo('radius_explicit_gas_limits', {
+          message: 'Using explicit gas limits for Radius Testnet',
+          callGasLimit: gasLimits.callGasLimit?.toString(),
+          verificationGasLimit: gasLimits.verificationGasLimit?.toString(),
+          preVerificationGas: gasLimits.preVerificationGas?.toString()
+        });
+      }
+
       // Send user operation through permissionless with SBC's bundler and paymaster
-      const userOpHash = await smartAccountClient.sendUserOperation({ calls });
+      const userOpHash = await smartAccountClient.sendUserOperation({
+        calls,
+        ...gasLimits
+      });
       this.logInfo('user_operation_sent', { userOpHash });
 
       // Wait for the transaction to be mined
+      // Radius Testnet requires longer timeout and more frequent polling
       this.logInfo('waiting_for_receipt');
-      const receipt = await smartAccountClient.waitForUserOperationReceipt({
-        hash: userOpHash
-      });
-      
+      const receipt = await smartAccountClient.waitForUserOperationReceipt(
+        isRadiusTestnet ? {
+          hash: userOpHash,
+          // in case we need special polling settings for Radius Testnet
+          // pollingInterval: 1000,
+          // timeout: 100000,
+          // retryCount: 10
+        } : {
+          hash: userOpHash
+        }
+      );
+
       const result = {
         userOperationHash: userOpHash,
         transactionHash: receipt.receipt.transactionHash,
         blockNumber: receipt.receipt.blockNumber.toString(),
         gasUsed: receipt.receipt.gasUsed.toString()
       };
-      
+
       this.logInfo('user_operation_confirmed', result);
       return result;
 
@@ -522,17 +605,66 @@ export class SbcAppKit {
   async estimateUserOperation(params: SendUserOperationParams): Promise<UserOperationEstimate> {
     try {
       this.logInfo('estimating_user_operation_gas', { isBatch: this.isBatchOperation(params) });
-      
+
       const smartAccountClient = await this.initializeSmartAccountClient();
-      
+
       if (!smartAccountClient.account) {
         throw new Error('Smart account not initialized');
       }
-      
+
       // Convert params to calls array and validate
       const calls = this.normalizeToCalls(params);
       this.logInfo('prepared_calls_for_estimation', { callsCount: calls.length });
 
+      // Radius Testnet requires explicit gas limits
+      const isRadiusTestnet = this.config.chain.id === 1223953;
+      const gasLimits = isRadiusTestnet ? {
+        callGasLimit: 300000n,
+        verificationGasLimit: 300000n,
+        preVerificationGas: 100000n,
+      } : {};
+
+      if (isRadiusTestnet) {
+        this.logInfo('radius_estimation_with_explicit_limits', {
+          message: 'Using explicit gas limits for Radius Testnet estimation',
+          callGasLimit: gasLimits.callGasLimit?.toString(),
+          verificationGasLimit: gasLimits.verificationGasLimit?.toString(),
+          preVerificationGas: gasLimits.preVerificationGas?.toString()
+        });
+
+        // For Radius Testnet, return the explicit gas limits directly
+        // since estimation doesn't work reliably
+        const gasPrice = await this.publicClient.getGasPrice();
+        const accountBalance = await this.publicClient.getBalance({
+          address: smartAccountClient.account.address
+        });
+
+        const totalGasUsed = (gasLimits.preVerificationGas || 0n) + (gasLimits.verificationGasLimit || 0n) + (gasLimits.callGasLimit || 0n);
+        const totalGasCost = (totalGasUsed * gasPrice * 110n) / 100n;
+
+        const estimateResult = {
+          preVerificationGas: gasLimits.preVerificationGas?.toString() || '0',
+          verificationGasLimit: gasLimits.verificationGasLimit?.toString() || '0',
+          callGasLimit: gasLimits.callGasLimit?.toString() || '0',
+          maxFeePerGas: gasPrice.toString(),
+          maxPriorityFeePerGas: (gasPrice * 2n).toString(),
+          totalGasUsed: totalGasUsed.toString(),
+          totalGasCost: totalGasCost.toString(),
+          paymasterVerificationGasLimit: undefined,
+          paymasterPostOpGasLimit: undefined
+        };
+
+        this.logInfo('radius_gas_estimation_completed', {
+          totalGasUsed: estimateResult.totalGasUsed,
+          totalGasCost: estimateResult.totalGasCost,
+          gasPrice: gasPrice.toString(),
+          accountBalance: accountBalance.toString()
+        });
+
+        return estimateResult;
+      }
+
+      // Standard estimation for non-Radius chains
       // First prepare the user operation to get the proper structure with all required fields
       this.logInfo('preparing_user_operation_for_estimation');
       const preparedUserOp = await smartAccountClient.prepareUserOperation({
@@ -565,16 +697,16 @@ export class SbcAppKit {
       });
 
       // Get account balance and calculate gas costs
-      const accountBalance = await this.publicClient.getBalance({ 
-        address: smartAccountClient.account.address 
+      const accountBalance = await this.publicClient.getBalance({
+        address: smartAccountClient.account.address
       });
       const { totalGasUsed, totalGasCost } = this.calculateGasCost(gasEstimate, preparedUserOp.maxFeePerGas);
 
-      this.logInfo('account_balance_during_estimation', { 
+      this.logInfo('account_balance_during_estimation', {
         balance: accountBalance.toString(),
         balanceInEth: (Number(accountBalance) / 1e18).toFixed(6)
       });
-      
+
       const estimateResult = {
         preVerificationGas: gasEstimate.preVerificationGas.toString(),
         verificationGasLimit: gasEstimate.verificationGasLimit.toString(),
@@ -586,14 +718,14 @@ export class SbcAppKit {
         paymasterVerificationGasLimit: gasEstimate.paymasterVerificationGasLimit?.toString(),
         paymasterPostOpGasLimit: gasEstimate.paymasterPostOpGasLimit?.toString()
       };
-      
-      this.logInfo('gas_estimation_completed', { 
-        totalGasUsed: estimateResult.totalGasUsed, 
+
+      this.logInfo('gas_estimation_completed', {
+        totalGasUsed: estimateResult.totalGasUsed,
         totalGasCost: estimateResult.totalGasCost,
         gasPrice: preparedUserOp.maxFeePerGas.toString(),
         paymasterWillCoverCosts: !!(gasEstimate.paymasterVerificationGasLimit || gasEstimate.paymasterPostOpGasLimit)
       });
-      
+
       return estimateResult;
 
     } catch (error) {

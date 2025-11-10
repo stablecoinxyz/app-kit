@@ -20,6 +20,19 @@ export function SbcProvider({ config, children, onError }: SbcProviderProps) {
       setIsInitialized(true);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to initialize SBC App Kit');
+
+      // Log to console if debug mode is enabled
+      if (config.debug) {
+        console.error('[SBC App Kit] Initialization failed:', error);
+        console.error('[SBC App Kit] Config:', {
+          chain: config.chain?.name,
+          chainId: config.chain?.id,
+          wallet: config.wallet,
+          hasApiKey: !!config.apiKey,
+          apiKeyValid: config.apiKey?.startsWith('sbc-'),
+        });
+      }
+
       setError(error);
       setSbcAppKit(null);
       setIsInitialized(false);

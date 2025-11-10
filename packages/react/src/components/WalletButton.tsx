@@ -59,6 +59,13 @@ export function WalletButton({
       onConnect?.(result);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to connect wallet');
+
+      // Log to console if debug mode is enabled
+      if ((sbcAppKit as any).debug) {
+        console.error('[SBC App Kit] Wallet connection failed:', error);
+        console.error('[SBC App Kit] Wallet type:', walletType);
+      }
+
       setError(error.message);
       onError?.(error);
     } finally {

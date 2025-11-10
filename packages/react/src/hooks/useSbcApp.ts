@@ -61,6 +61,12 @@ export function useSbcApp(): UseSbcAppReturn {
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to load account');
+
+      // Log to console if debug mode is enabled
+      if (sbcAppKit && (sbcAppKit as any).debug) {
+        console.error('[SBC App Kit] Failed to load account:', error);
+      }
+
       setAccountError(error);
       setAccount(null);
       setOwnerAddress(null);
