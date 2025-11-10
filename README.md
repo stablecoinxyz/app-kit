@@ -48,6 +48,7 @@ pnpm dev:dynamic   # React with Dynamic SDK
 pnpm dev:nextjs    # Next.js example
 pnpm dev:backend   # Backend/Node.js example
 pnpm dev:para      # React with Para embedded wallet
+pnpm dev:radius    # React with Radius Testnet
 
 # Syncing future updates
 git pull
@@ -167,6 +168,7 @@ For full documentation, see [API_FULL.md](./API_FULL.md)
 3. **[React Wallet](./examples/react-wallet)** - User wallet integration
 4. **[React Dynamic](./examples/react-dynamic)** - Dynamic SDK integration with wallet & email auth
 5. **[React Para](./examples/react-para)** - Para embedded wallet integration (gasless permit + transfer)
+6. **[React Radius](./examples/react-radius)** - Radius Testnet with SimpleAccount and custom EntryPoint
 
 > **Note**: Examples use the `latest` version to showcase the most recent published features. For development, use the `dev:local` scripts to link to workspace packages.
 
