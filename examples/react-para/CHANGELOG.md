@@ -1,5 +1,13 @@
 # sbc-para-example
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [371bfdb]
+  - @stablecoin.xyz/core@1.4.0
+  - @stablecoin.xyz/react@0.6.0
+
 ## 0.0.1
 
 ### Patch Changes
