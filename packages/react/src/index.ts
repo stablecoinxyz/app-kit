@@ -3,6 +3,7 @@ export * from './hooks/useSbcApp';
 export * from './hooks/useUserOperation';
 export * from './hooks/useSbcDynamic';
 export * from './hooks/useSbcPara';
+export * from './hooks/useSbcTurnkey';
 export * from './components/SbcProvider';
 export * from './components/WalletConnect';
 export * from './components/WalletButton';
