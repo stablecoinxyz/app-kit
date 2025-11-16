@@ -1,15 +1,17 @@
-# SBC + Turnkey Example (Production-Ready)
+# SBC + Turnkey Example
 
-This example demonstrates a **production-ready** integration of Turnkey's embedded wallets with SBC App Kit for gasless smart account transactions.
+This example demonstrates an integration of Turnkey's embedded wallets with SBC App Kit for gasless smart account transactions.
 
 ## Features
 
 - ✅ **Backend Architecture**: Express server handling Turnkey sub-org creation
 - ✅ **Passkey Authentication**: Users create wallets with biometric auth (Face ID/Touch ID)
+- ✅ **Wallet Authentication**: Connect with MetaMask/Coinbase Wallet as alternative to passkeys
 - ✅ **Embedded Wallets**: Non-custodial wallets managed by Turnkey
 - ✅ **Smart Accounts**: ERC-4337 account abstraction with SBC paymaster
 - ✅ **Gasless Transactions**: All gas fees sponsored by SBC
-- ✅ **Production Ready**: Follows official Turnkey architecture patterns
+- ✅ **Instant Authentication**: Immediate UI response with localStorage-based session restoration
+- ✅ **Account History**: Never lose access to accounts - all accounts saved and switchable
 
 ## Architecture
 
@@ -49,30 +51,33 @@ Your Turnkey Org (Parent)
 - ✅ **Security Isolation**: Users can't access each other's keys
 - ✅ **Compliance**: Clear data separation
 
-### Complete Flow
+### Authentication Flows
 
-```
-1. User clicks "Sign Up with Passkey"
-   ↓
-2. Browser: passkeyClient.createUserPasskey()
-   → WebAuthn creates passkey (Face ID/Touch ID)
-   → Returns attestation + challenge
-   ↓
-3. Frontend → Backend: POST /api/create-sub-org
-   → Sends: { userEmail, userName, attestation, challenge }
-   ↓
-4. Backend → Turnkey API: createSubOrganization()
-   → Uses your API keys (secret)
-   → Creates sub-org with user's passkey
-   → Creates Ethereum wallet automatically
-   ↓
-5. Backend → Frontend: Returns { subOrgId, walletId, address }
-   ↓
-6. Frontend → SBC: useSbcTurnkey()
-   → Creates smart account with Turnkey wallet as owner
-   ↓
-7. User can sign transactions with their passkey!
-```
+#### Passkey Flow (Biometric)
+1. User clicks "Continue with Passkey"
+2. Browser creates passkey via WebAuthn (Face ID/Touch ID)
+3. Frontend → Backend: `POST /api/create-sub-org` with attestation
+4. Backend → Turnkey: Creates sub-org + Turnkey-managed wallet
+5. Page reloads → Smart account initializes with Turnkey wallet as owner
+6. User signs transactions with biometric auth
+
+#### Wallet Flow (MetaMask/Coinbase)
+1. User clicks "Connect Wallet"
+2. MetaMask prompts for connection + signature
+3. Frontend derives public key from signature
+4. Frontend → Backend: `POST /api/create-sub-org-with-wallet` with public key
+5. Backend → Turnkey: Creates sub-org (no Turnkey wallet - uses user's wallet)
+6. Page reloads → Smart account initializes with user's wallet as owner
+7. User signs transactions with their connected wallet
+
+**Comparison:**
+| Feature | Passkey | Wallet |
+|---------|---------|--------|
+| **Setup** | Biometric (Face ID/Touch ID) | Connect existing wallet |
+| **Security** | Device-bound | Private key controlled |
+| **Cross-Device** | ❌ Same device required | ✅ Works anywhere |
+| **Convenience** | ✅ Fastest auth | Requires wallet connection |
+| **Best For** | Single-device users | Multi-device flexibility |
 
 ## Prerequisites
 
@@ -154,24 +159,41 @@ pnpm dev:local
 
 ## How It Works
 
-### User Onboarding Flow
-
-1. **User visits app** → Sees "Sign Up" button
-2. **User clicks "Sign Up"** → Frontend initiates passkey creation
-3. **Passkey created** → Browser uses WebAuthn (Face ID/Touch ID)
-4. **Frontend calls backend** → `POST /api/create-sub-org` with passkey attestation
-5. **Backend creates sub-org** → Uses Turnkey API keys to create user's sub-organization
-6. **Backend creates wallet** → `POST /api/create-wallet` creates Ethereum wallet
-7. **SBC creates smart account** → User's Turnkey wallet becomes smart account owner
-8. **User can transact** → Sign transactions with passkey, gas sponsored by SBC
-
-### Transaction Flow
+### Transaction Flow (After Authentication)
 
 1. User initiates transaction (e.g., "Send 1 SBC")
-2. Frontend builds transaction data
-3. User signs with passkey (biometric auth)
-4. SBC sponsors gas fees
-5. Transaction executes on-chain
+2. Frontend builds transaction via SBC App Kit
+3. User signs transaction:
+   - **Passkey**: Biometric prompt (Face ID/Touch ID)
+   - **Wallet**: MetaMask/Coinbase popup
+4. SBC paymaster sponsors all gas fees
+5. Transaction executes on-chain via ERC-4337
+
+## Account Management Features
+
+### Instant Authentication & Smart Session Management
+The app provides intelligent authentication state management:
+- **Instant Feedback**: Account info loaded immediately from localStorage on page load
+- **Smart State Display**:
+  - "✅ Authenticated" when wallet client is ready and connected
+  - "🔐 Re-authentication Required" when session needs renewal
+- **Seamless Re-login**: After logout or account switch, users see their account info with clear re-authentication prompts
+- **No Premature UI**: Transaction forms only show when authentication is complete
+- **Background Initialization**: Smart account setup happens in the background without blocking UI
+- **Smooth UX**: Native-app-like experience with no jarring loading states
+
+### Account History & Switching
+Users can manage multiple accounts without losing access:
+- **Persistent History**: All accounts saved to localStorage, never deleted
+- **Easy Switching**: Use account selector to switch between multiple accounts
+- **Multi-Auth Support**: Each account maintains its own method (passkey or wallet)
+- **Session Management**: Only active session changes, account data persists
+- **Activity Tracking**: View last-used timestamp for each account
+
+**Why This Matters:**
+- Never lose access to funds, even if localStorage is cleared
+- Seamless multi-account management on single device
+- Works across browsers (use account switcher to restore accounts)
 
 ## Security Notes
 

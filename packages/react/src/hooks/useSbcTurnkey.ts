@@ -106,7 +106,11 @@ export function useSbcTurnkey(config: UseSbcTurnkeyConfig): UseSbcTurnkeyReturn 
   // Initialize SBC AppKit when Turnkey client is available
   useEffect(() => {
     const initializeSbc = async () => {
-      if (!config.turnkeyClient || !config.organizationId) {
+      // For wallet-based authentication, we don't need turnkeyClient if turnkeyWalletClient is provided
+      const hasWalletClient = !!config.turnkeyWalletClient?.account?.address;
+      const hasTurnkeyClient = !!config.turnkeyClient;
+
+      if (!config.organizationId || (!hasTurnkeyClient && !hasWalletClient)) {
         setSbcAppKit(null);
         setIsInitialized(false);
         setError(null);
@@ -142,8 +146,8 @@ export function useSbcTurnkey(config: UseSbcTurnkeyConfig): UseSbcTurnkeyReturn 
           if (config.debug) {
             console.log('[useSbcTurnkey] Using address from wallet client:', walletAddress);
           }
-        } else {
-          // Otherwise, fetch wallet info from Turnkey
+        } else if (config.turnkeyClient) {
+          // Otherwise, fetch wallet info from Turnkey (only if turnkeyClient is available)
           if (config.debug) {
             console.log('[useSbcTurnkey] No wallet client address found, fetching from Turnkey...');
           }
@@ -166,7 +170,7 @@ export function useSbcTurnkey(config: UseSbcTurnkeyConfig): UseSbcTurnkeyReturn 
         }
 
         if (!walletAddress) {
-          throw new Error('No Turnkey wallet address found. Create a wallet first.');
+          throw new Error('No Turnkey wallet address found. Create a wallet first or provide turnkeyWalletClient.');
         }
 
         // Create SBC AppKit with Turnkey integration

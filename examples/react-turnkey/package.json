@@ -17,13 +17,9 @@
   },
   "dependencies": {
     "@stablecoin.xyz/react": "workspace:*",
-    "@turnkey/api-key-stamper": "^0.5.0",
-    "@turnkey/http": "^3.15.0",
-    "@turnkey/sdk-browser": "^5.13.1",
     "@turnkey/sdk-react": "^5.4.10",
     "@turnkey/sdk-server": "^4.12.0",
     "@turnkey/viem": "^0.14.12",
-    "@turnkey/webauthn-stamper": "^0.6.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
