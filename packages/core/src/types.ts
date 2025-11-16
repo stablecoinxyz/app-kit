@@ -1,7 +1,7 @@
 import { Address, Hex, Chain, WalletClient } from 'viem';
 
 // Wallet Integration Types
-export type SupportedWalletType = 'auto' | 'metamask' | 'coinbase' | 'walletconnect' | 'dynamic' | 'para' | 'custom';
+export type SupportedWalletType = 'auto' | 'metamask' | 'coinbase' | 'walletconnect' | 'dynamic' | 'para' | 'turnkey' | 'custom';
 
 export interface WalletOptions {
   /** WalletConnect project ID (required for WalletConnect) */
@@ -33,6 +33,17 @@ export interface WalletOptions {
       walletClient: any;
       account: any;
     } | null;
+  };
+  /** Turnkey SDK context (required for Turnkey integration) */
+  turnkeyContext?: {
+    /** Turnkey client from getActiveClient() */
+    turnkeyClient?: any;
+    /** Organization ID */
+    organizationId?: string;
+    /** User information from Turnkey */
+    user?: any;
+    /** Turnkey viem wallet client (preferred method) */
+    turnkeyWalletClient?: any;
   };
 }
 

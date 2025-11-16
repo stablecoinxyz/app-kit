@@ -103,12 +103,17 @@ export class WalletManager {
     if (walletType === 'dynamic') {
       return this.connectDynamic();
     }
-    
+
     // Handle Para integration
     if (walletType === 'para') {
       return this.connectPara();
     }
-    
+
+    // Handle Turnkey integration
+    if (walletType === 'turnkey') {
+      return this.connectTurnkey();
+    }
+
     // Auto-detect if requested
     if (walletType === 'auto') {
       const bestWallet = await this.getBestAvailableWallet();
@@ -381,6 +386,115 @@ export class WalletManager {
       },
       address,
     };
+  }
+
+  /**
+   * Connect to Turnkey SDK
+   */
+  private async connectTurnkey(): Promise<WalletConnectionResult> {
+    const turnkeyContext = this.config.options?.turnkeyContext;
+
+    // Method 1: Use pre-created wallet client (recommended)
+    if (turnkeyContext?.turnkeyWalletClient) {
+      const address = turnkeyContext.turnkeyWalletClient.account?.address;
+
+      if (!address) {
+        throw new Error('Turnkey wallet client must have an account with address');
+      }
+
+      return {
+        walletClient: turnkeyContext.turnkeyWalletClient,
+        wallet: {
+          type: 'turnkey',
+          name: 'Turnkey Wallet',
+          available: true,
+          provider: turnkeyContext.turnkeyClient,
+        },
+        address: address as `0x${string}`,
+      };
+    }
+
+    // Method 2: Create wallet client from Turnkey client
+    if (!turnkeyContext?.turnkeyClient || !turnkeyContext?.organizationId) {
+      throw new Error('Turnkey client and organizationId required. Use getActiveClient() from useTurnkey hook or provide turnkeyWalletClient directly.');
+    }
+
+    try {
+      const { http } = await import('viem');
+
+      // Get wallet info from Turnkey
+      const wallets = await turnkeyContext.turnkeyClient.getWallets({
+        organizationId: turnkeyContext.organizationId
+      });
+
+      const walletId = wallets?.wallets[0]?.walletId;
+      if (!walletId) {
+        throw new Error('No Turnkey wallet found for this user. Create a wallet first.');
+      }
+
+      const accounts = await turnkeyContext.turnkeyClient.getWalletAccounts({
+        organizationId: turnkeyContext.organizationId,
+        walletId,
+      });
+
+      const signWith = accounts?.accounts[0]?.address;
+      const ethereumAddress = signWith;
+
+      if (!ethereumAddress) {
+        throw new Error('No Ethereum address found in Turnkey wallet');
+      }
+
+      // Create a minimal account that defers signing to when it's actually needed
+      // This avoids triggering passkey prompts during initialization
+      const deferredAccount = toAccount({
+        address: ethereumAddress as `0x${string}`,
+        async signMessage({ message }) {
+          // Import createAccount lazily when signing is actually needed
+          const { createAccount } = await import('@turnkey/viem');
+          const account = await createAccount({
+            client: turnkeyContext.turnkeyClient,
+            organizationId: turnkeyContext.organizationId,
+            signWith,
+            ethereumAddress,
+          });
+          return account.signMessage({ message });
+        },
+        async signTransaction(transaction) {
+          throw new Error('signTransaction not supported for Turnkey with ERC-4337');
+        },
+        async signTypedData(typedData) {
+          // Import createAccount lazily when signing is actually needed
+          const { createAccount } = await import('@turnkey/viem');
+          const account = await createAccount({
+            client: turnkeyContext.turnkeyClient,
+            organizationId: turnkeyContext.organizationId,
+            signWith,
+            ethereumAddress,
+          });
+          return account.signTypedData(typedData);
+        },
+      });
+
+      // Create wallet client with deferred account
+      const walletClient = createWalletClient({
+        account: deferredAccount,
+        chain: this.config.chain,
+        transport: http(this.config.rpcUrl || this.config.chain.rpcUrls.default.http[0]),
+      });
+
+      return {
+        walletClient,
+        wallet: {
+          type: 'turnkey',
+          name: 'Turnkey Wallet',
+          available: true,
+          provider: turnkeyContext.turnkeyClient,
+        },
+        address: ethereumAddress as `0x${string}`,
+      };
+    } catch (error) {
+      throw new Error(`Failed to connect Turnkey wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 

@@ -39,6 +39,18 @@
   "dependencies": {
     "permissionless": "^0.2.47"
   },
+  "peerDependencies": {
+    "@turnkey/http": ">=3.0.0",
+    "@turnkey/viem": ">=0.14.0"
+  },
+  "peerDependenciesMeta": {
+    "@turnkey/http": {
+      "optional": true
+    },
+    "@turnkey/viem": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
