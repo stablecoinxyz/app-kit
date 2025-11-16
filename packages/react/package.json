@@ -1,6 +1,6 @@
 {
   "name": "@stablecoin.xyz/react",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "React hooks and components for SBC Account Abstraction",
   "type": "module",
   "main": "dist/index.js",

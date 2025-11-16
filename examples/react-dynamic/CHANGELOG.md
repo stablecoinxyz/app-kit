@@ -1,5 +1,12 @@
 # sbc-dynamic-example
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [6b86df6]
+  - @stablecoin.xyz/react@0.6.1
+
 ## 0.0.3
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @stablecoin.xyz/react
 
+## 0.6.1
+
+### Patch Changes
+
+- 6b86df6: Fix useSbcTurnkey hook to properly support wallet-based authentication when turnkeyWalletClient is provided without turnkeyClient
+
 ## 0.6.0
 
 ### Minor Changes
