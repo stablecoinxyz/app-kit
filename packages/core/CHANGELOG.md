@@ -1,5 +1,19 @@
 # @stablecoin.xyz/core
 
+## 1.5.0
+
+### Minor Changes
+
+- Add Turnkey wallet integration support
+
+  - Add 'turnkey' as a supported wallet type
+  - Implement connectTurnkey() method in WalletManager with two connection modes:
+    - Method 1: Pre-created turnkeyWalletClient (recommended)
+    - Method 2: Auto-create wallet client from Turnkey client
+  - Add deferred account creation to avoid triggering passkey prompts during initialization
+  - Add optional peer dependencies for @turnkey/http and @turnkey/viem
+  - Add turnkeyContext to WalletOptions for Turnkey SDK integration
+
 ## 1.4.0
 
 ### Minor Changes
