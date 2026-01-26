@@ -797,7 +797,7 @@ describe('SbcAppKit', () => {
 
       const kit = new SbcAppKit(config);
       expect(kit.getChain()).toBe(radiusTestnet);
-      expect(kit.getChainConfig().id).toBe(1223953);
+      expect(kit.getChainConfig().id).toBe(72344);
     });
 
     it('should initialize Radius Testnet with custom EntryPoint', async () => {

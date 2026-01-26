@@ -10,10 +10,10 @@ const chain = radiusTestnet;
 const rpcUrl = import.meta.env.VITE_RPC_URL || 'https://rpc.testnet.radiustech.xyz';
 
 // TestSBC token on Radius Testnet (EIP-2612 compatible)
-const TEST_SBC_TOKEN_ADDRESS = '0xbc14568925d9359a203b5c5c6de838c8baeebf5a';
+const TEST_SBC_TOKEN_ADDRESS = '0x4ace1a89b13bbe0101f73eb47bb83ac711cb2fad';
 const TEST_SBC_DECIMALS = 6;
 
-const chainExplorer = 'https://testnet.radiustech.xyz/testnet/explorer';
+const chainExplorer = 'https://explorer.testnet.radiustech.xyz';
 
 const publicClient = createPublicClient({
   chain,

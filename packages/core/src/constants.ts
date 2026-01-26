@@ -20,12 +20,12 @@ export const CHAIN_CONFIGS = new Map<number, ChainConfig>([
     blockExplorerUrl: 'https://sepolia.basescan.org'
   }],
   [radiusTestnet.id, {
-    id: 1223953,
+    id: 72344,
     name: 'Radius Testnet',
     idString: 'radiusTestnet',
     rpcUrl: 'https://rpc.testnet.radiustech.xyz',
     aaProxyUrl: 'https://api.aa.stablecoin.xyz',
-    blockExplorerUrl: 'https://testnet.radiustech.xyz/testnet/explorer'
+    blockExplorerUrl: 'https://explorer.testnet.radiustech.xyz'
   }]
 ]);
 

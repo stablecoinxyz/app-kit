@@ -1,7 +1,7 @@
 import { Chain, defineChain } from 'viem'
 
 export const radiusTestnet = defineChain({
-  id: 1223953,
+  id: 72344,
   name: 'Radius Testnet',
   nativeCurrency: {
     name: 'USD',
@@ -16,15 +16,15 @@ export const radiusTestnet = defineChain({
   blockExplorers: {
     default: {
       name: 'Radius Explorer',
-      url: 'https://testnet.radiustech.xyz/testnet/explorer'
+      url: 'https://explorer.testnet.radiustech.xyz'
     },
   },
   testnet: true,
 }) as unknown as Chain;
 
 // TestSBC with EIP-2612 support
-export const TestSBC_CONTRACT_ADDRESS = "0xbc14568925d9359a203b5c5c6de838c8baeebf5a";
+export const TestSBC_CONTRACT_ADDRESS = "0x4ace1a89b13bbe0101f73eb47bb83ac711cb2fad";
 
 // Account Abstraction Addresses
-export const RADIUS_TESTNET_ENTRY_POINT = "0x9b443e4bd122444852B52331f851a000164Cc83F";
-export const RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY = "0x4DEbDe0Be05E51432D9afAf61D84F7F0fEA63495";
+export const RADIUS_TESTNET_ENTRY_POINT = "0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F";
+export const RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY = "0x7d8fB3E53d345601a02C3214e314f28668510b03";

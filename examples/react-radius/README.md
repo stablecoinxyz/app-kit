@@ -34,15 +34,15 @@ Get your API key from [SBC Dashboard](https://stablecoin.xyz)
 
 ## Radius Testnet Details
 
-- **Chain ID**: 1223953
+- **Chain ID**: 72344
 - **RPC**: https://rpc.testnet.radiustech.xyz
-- **Explorer**: https://testnet.radiustech.xyz/testnet/explorer
-- **EntryPoint**: 0x9b443e4bd122444852B52331f851a000164Cc83F
-- **Factory**: 0x4DEbDe0Be05E51432D9afAf61D84F7F0fEA63495
+- **Explorer**: https://explorer.testnet.radiustech.xyz
+- **EntryPoint**: 0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F
+- **Factory**: 0x7d8fB3E53d345601a02C3214e314f28668510b03
 
 ## TestSBC Token
 
-- **Address**: `0xbc14568925d9359a203b5c5c6de838c8baeebf5a`
+- **Address**: `0x4ace1a89b13bbe0101f73eb47bb83ac711cb2fad`
 - **Decimals**: 6
 - **Features**: ERC-20 with EIP-2612 permit support
 
@@ -107,9 +107,9 @@ pnpm run preview
 Add the network manually:
 - Network Name: Radius Testnet
 - RPC URL: https://rpc.testnet.radiustech.xyz
-- Chain ID: 1223953
+- Chain ID: 72344
 - Currency Symbol: USD
-- Block Explorer: https://testnet.radiustech.xyz/testnet/explorer
+- Block Explorer: https://explorer.testnet.radiustech.xyz
 
 ### Transaction fails
 

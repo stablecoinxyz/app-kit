@@ -29,11 +29,11 @@ describe('Utils Functions', () => {
 
     it('should return config for radiusTestnet chain', () => {
       const radiusConfig = getChainConfig(radiusTestnet);
-      expect(radiusConfig.id).toBe(1223953);
+      expect(radiusConfig.id).toBe(72344);
       expect(radiusConfig.name).toBe('Radius Testnet');
       expect(radiusConfig.idString).toBe('radiusTestnet');
       expect(radiusConfig.rpcUrl).toBe('https://rpc.testnet.radiustech.xyz');
-      expect(radiusConfig.blockExplorerUrl).toBe('https://testnet.radiustech.xyz/testnet/explorer');
+      expect(radiusConfig.blockExplorerUrl).toBe('https://explorer.testnet.radiustech.xyz');
     });
 
     it('should throw error for unsupported chain', () => {
