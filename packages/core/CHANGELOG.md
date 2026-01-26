@@ -1,5 +1,11 @@
 # @stablecoin.xyz/core
 
+## 1.5.1
+
+### Patch Changes
+
+- Fix Radius testnet explorer URL from explorer.testnet.radiustech.xyz to
+
 ## 1.5.0
 
 ### Minor Changes

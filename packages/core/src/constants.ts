@@ -25,7 +25,7 @@ export const CHAIN_CONFIGS = new Map<number, ChainConfig>([
     idString: 'radiusTestnet',
     rpcUrl: 'https://rpc.testnet.radiustech.xyz',
     aaProxyUrl: 'https://api.aa.stablecoin.xyz',
-    blockExplorerUrl: 'https://explorer.testnet.radiustech.xyz'
+    blockExplorerUrl: 'https://testnet.radiustech.xyz/testnet/explorer'
   }]
 ]);
 

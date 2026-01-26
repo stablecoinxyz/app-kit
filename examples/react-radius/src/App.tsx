@@ -13,7 +13,7 @@ const rpcUrl = import.meta.env.VITE_RPC_URL || 'https://rpc.testnet.radiustech.x
 const TEST_SBC_TOKEN_ADDRESS = '0x4ace1a89b13bbe0101f73eb47bb83ac711cb2fad';
 const TEST_SBC_DECIMALS = 6;
 
-const chainExplorer = 'https://explorer.testnet.radiustech.xyz';
+const chainExplorer = 'https://testnet.radiustech.xyz/testnet/explorer';
 
 const publicClient = createPublicClient({
   chain,
