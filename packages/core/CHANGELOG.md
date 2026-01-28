@@ -1,5 +1,19 @@
 # @stablecoin.xyz/core
 
+## 1.6.0
+
+### Minor Changes
+
+- d79fbfe: Add chain-direct polling for Radius testnet UserOperation receipts
+
+  The bundler's `eth_getUserOperationReceipt` may not return receipts reliably on Radius testnet due to getLogs configuration. This change adds a fallback that polls the EntryPoint contract directly for the `UserOperationEvent` log matching the userOpHash, ensuring transactions are properly confirmed.
+
+  Also updates TestSBC contract address to new deployment.
+
+### Patch Changes
+
+- d79fbfe: Fix Radius testnet block explorer URL format
+
 ## 1.5.2
 
 ### Patch Changes
