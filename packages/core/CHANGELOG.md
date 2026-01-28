@@ -1,5 +1,11 @@
 # @stablecoin.xyz/core
 
+## 1.5.2
+
+### Patch Changes
+
+- Fix Radius testnet chain ID in published build (72344)
+
 ## 1.5.1
 
 ### Patch Changes
