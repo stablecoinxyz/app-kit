@@ -33,7 +33,7 @@ describe('Utils Functions', () => {
       expect(radiusConfig.name).toBe('Radius Testnet');
       expect(radiusConfig.idString).toBe('radiusTestnet');
       expect(radiusConfig.rpcUrl).toBe('https://rpc.testnet.radiustech.xyz');
-      expect(radiusConfig.blockExplorerUrl).toBe('https://testnet.radiustech.xyz/testnet/explorer');
+      expect(radiusConfig.blockExplorerUrl).toBe('https://testnet.radiustech.xyz/testnet');
     });
 
     it('should throw error for unsupported chain', () => {

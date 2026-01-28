@@ -303,7 +303,7 @@ export class SbcAppKit {
 
         smartAccount = await toRadiusSimpleSmartAccount({
           client: this.publicClient,
-          owner: this.walletClient.account as LocalAccount,
+          owner: this.walletClient as WalletClient,
         });
 
         this.logInfo('radius_account_created', {
@@ -355,7 +355,11 @@ export class SbcAppKit {
         paymaster,
         userOperation: {
           estimateFeesPerGas: async () => {
-            const gasPrice = await this.publicClient.getGasPrice();
+            let gasPrice = await this.publicClient.getGasPrice();
+            // Radius testnet: add 1 gwei to ensure non-zero gas price
+            if (isRadiusTestnet) {
+              gasPrice = gasPrice + 1000000000n; // +1 gwei
+            }
             return {
               maxFeePerGas: gasPrice,
               maxPriorityFeePerGas: gasPrice * 2n,
@@ -486,19 +490,21 @@ export class SbcAppKit {
       this.logInfo('user_operation_sent', { userOpHash });
 
       // Wait for the transaction to be mined
-      // Radius Testnet requires longer timeout and more frequent polling
       this.logInfo('waiting_for_receipt');
-      const receipt = await smartAccountClient.waitForUserOperationReceipt(
-        isRadiusTestnet ? {
-          hash: userOpHash,
-          // in case we need special polling settings for Radius Testnet
-          // pollingInterval: 1000,
-          // timeout: 100000,
-          // retryCount: 10
-        } : {
+
+      let receipt;
+      if (isRadiusTestnet) {
+        // Radius Testnet: Use chain-direct polling as primary method
+        // The bundler's eth_getUserOperationReceipt may not return receipts reliably
+        // due to getLogs configuration issues. Instead, we poll the chain directly
+        // for the UserOperationEvent log matching our userOpHash.
+        receipt = await this.waitForUserOperationOnChain(userOpHash, smartAccountClient);
+      } else {
+        // Other chains: Use standard bundler receipt polling
+        receipt = await smartAccountClient.waitForUserOperationReceipt({
           hash: userOpHash
-        }
-      );
+        });
+      }
 
       const result = {
         userOperationHash: userOpHash,
@@ -515,6 +521,106 @@ export class SbcAppKit {
       this.logError('user_operation_failed', { error: message });
       throw new Error(`Failed to send user operation: ${message}`);
     }
+  }
+
+  /**
+   * Wait for a UserOperation to be included on-chain by polling for the UserOperationEvent log.
+   *
+   * This is used as a fallback when the bundler's eth_getUserOperationReceipt doesn't return
+   * receipts reliably (e.g., on Radius Testnet where the bundler's getLogs may not find events).
+   *
+   * @param userOpHash - The hash of the UserOperation to wait for
+   * @param smartAccountClient - The smart account client (used to get EntryPoint address)
+   * @returns The receipt object matching the format of waitForUserOperationReceipt
+   */
+  private async waitForUserOperationOnChain(
+    userOpHash: `0x${string}`,
+    smartAccountClient: SmartAccountClient
+  ): Promise<{ receipt: { transactionHash: `0x${string}`; blockNumber: bigint; gasUsed: bigint } }> {
+    const entryPointAddress = smartAccountClient.account?.entryPoint?.address;
+    if (!entryPointAddress) {
+      throw new Error('EntryPoint address not available');
+    }
+
+    const maxAttempts = 60; // 60 attempts
+    const pollInterval = 2000; // 2 seconds between polls
+    const maxWaitTime = maxAttempts * pollInterval; // 120 seconds total
+
+    this.logInfo('chain_direct_polling_started', {
+      userOpHash,
+      entryPointAddress,
+      maxWaitTime: `${maxWaitTime / 1000}s`
+    });
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        // Query for UserOperationEvent logs with matching userOpHash
+        // The userOpHash is the first indexed parameter (topics[1]) in the event
+        const logs = await this.publicClient.getLogs({
+          address: entryPointAddress as `0x${string}`,
+          event: {
+            type: 'event',
+            name: 'UserOperationEvent',
+            inputs: [
+              { type: 'bytes32', name: 'userOpHash', indexed: true },
+              { type: 'address', name: 'sender', indexed: true },
+              { type: 'address', name: 'paymaster', indexed: true },
+              { type: 'uint256', name: 'nonce', indexed: false },
+              { type: 'bool', name: 'success', indexed: false },
+              { type: 'uint256', name: 'actualGasCost', indexed: false },
+              { type: 'uint256', name: 'actualGasUsed', indexed: false },
+            ],
+          },
+          args: {
+            userOpHash: userOpHash,
+          },
+          fromBlock: 'earliest',
+          toBlock: 'latest',
+        });
+
+        if (logs.length > 0) {
+          const log = logs[0];
+          const txHash = log.transactionHash;
+
+          if (!txHash) {
+            // Transaction still pending
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            continue;
+          }
+
+          // Get the full transaction receipt for additional details
+          const txReceipt = await this.publicClient.getTransactionReceipt({
+            hash: txHash,
+          });
+
+          this.logInfo('chain_direct_polling_success', {
+            userOpHash,
+            transactionHash: txHash,
+            blockNumber: txReceipt.blockNumber.toString(),
+            attempt: attempt + 1
+          });
+
+          return {
+            receipt: {
+              transactionHash: txHash,
+              blockNumber: txReceipt.blockNumber,
+              gasUsed: txReceipt.gasUsed,
+            }
+          };
+        }
+      } catch (error) {
+        // Log but don't fail - continue polling
+        this.logInfo('chain_direct_polling_attempt_error', {
+          attempt: attempt + 1,
+          error: formatError(error)
+        });
+      }
+
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+
+    throw new Error(`UserOperation not found on chain after ${maxWaitTime / 1000} seconds. Hash: ${userOpHash}`);
   }
 
   /**
@@ -535,11 +641,19 @@ export class SbcAppKit {
 
       const smartAccountClient = await this.initializeSmartAccountClient();
       const { account } = smartAccountClient;
-      
+
       if (!account) {
         throw new Error('Smart account not initialized');
       }
-      
+
+      // Debug: Log account type and nonce method
+      this.logInfo('account_debug', {
+        accountAddress: account.address,
+        hasGetNonce: typeof account.getNonce === 'function',
+        entryPointAddress: (account as any).entryPoint?.address,
+        entryPointVersion: (account as any).entryPoint?.version,
+      });
+
       const { address } = account;
       this.logInfo('smart_account_address', { address });
       
@@ -556,7 +670,13 @@ export class SbcAppKit {
       let nonce = 0;
       if (isDeployed) {
         try {
-          nonce = Number(await account.getNonce());
+          const rawNonce = await account.getNonce();
+          this.logInfo('raw_nonce_from_account', {
+            rawNonce: rawNonce.toString(),
+            rawNonceHex: '0x' + rawNonce.toString(16),
+            asNumber: Number(rawNonce)
+          });
+          nonce = Number(rawNonce);
           this.logInfo('account_nonce_retrieved', { nonce });
         } catch (error) {
           this.logInfo('failed_to_get_nonce_defaulting_to_0', { error: formatError(error) });

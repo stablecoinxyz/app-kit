@@ -16,14 +16,14 @@ export const radiusTestnet = defineChain({
   blockExplorers: {
     default: {
       name: 'Radius Explorer',
-      url: 'https://testnet.radiustech.xyz/testnet/explorer'
+      url: 'https://testnet.radiustech.xyz/testnet'
     },
   },
   testnet: true,
 }) as unknown as Chain;
 
 // TestSBC with EIP-2612 support
-export const TestSBC_CONTRACT_ADDRESS = "0x4ace1a89b13bbe0101f73eb47bb83ac711cb2fad";
+export const TestSBC_CONTRACT_ADDRESS = "0x17b7d356c95ef6d09472e43ba678b4a774f72f8f";
 
 // Account Abstraction Addresses
 export const RADIUS_TESTNET_ENTRY_POINT = "0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F";
