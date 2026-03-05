@@ -1,5 +1,12 @@
 # sbc-dynamic-example
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @stablecoin.xyz/core@1.6.1
+
 ## 0.0.8
 
 ### Patch Changes

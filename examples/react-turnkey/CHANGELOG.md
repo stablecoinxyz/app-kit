@@ -1,5 +1,12 @@
 # react-turnkey
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @stablecoin.xyz/core@1.6.1
+
 ## 0.0.1
 
 ### Patch Changes

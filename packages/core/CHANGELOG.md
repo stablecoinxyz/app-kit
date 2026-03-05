@@ -1,5 +1,11 @@
 # @stablecoin.xyz/core
 
+## 1.6.1
+
+### Patch Changes
+
+- Fix Radius mainnet: gas price parity (maxPriorityFeePerGas must equal maxFeePerGas), chain ID detection for explicit gas limits, and receipt polling via bundler status instead of getLogs
+
 ## 1.6.0
 
 ### Minor Changes
