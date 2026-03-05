@@ -16,7 +16,7 @@ export const radiusTestnet = defineChain({
   blockExplorers: {
     default: {
       name: 'Radius Explorer',
-      url: 'https://testnet.radiustech.xyz/testnet'
+      url: 'https://testnet.radiustech.xyz'
     },
   },
   testnet: true,

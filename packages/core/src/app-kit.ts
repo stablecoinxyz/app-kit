@@ -546,9 +546,13 @@ export class SbcAppKit {
     const pollInterval = 2000; // 2 seconds between polls
     const maxWaitTime = maxAttempts * pollInterval; // 120 seconds total
 
+    // Get current block number to avoid scanning entire chain history
+    const startBlock = await this.publicClient.getBlockNumber();
+
     this.logInfo('chain_direct_polling_started', {
       userOpHash,
       entryPointAddress,
+      startBlock: startBlock.toString(),
       maxWaitTime: `${maxWaitTime / 1000}s`
     });
 
@@ -556,6 +560,8 @@ export class SbcAppKit {
       try {
         // Query for UserOperationEvent logs with matching userOpHash
         // The userOpHash is the first indexed parameter (topics[1]) in the event
+        // Use startBlock - 5 as buffer to catch ops submitted just before we started
+        const fromBlock = startBlock > 5n ? startBlock - 5n : 0n;
         const logs = await this.publicClient.getLogs({
           address: entryPointAddress as `0x${string}`,
           event: {
@@ -574,7 +580,7 @@ export class SbcAppKit {
           args: {
             userOpHash: userOpHash,
           },
-          fromBlock: 'earliest',
+          fromBlock,
           toBlock: 'latest',
         });
 

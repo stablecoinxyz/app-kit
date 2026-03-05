@@ -16,6 +16,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@stablecoin.xyz/core": "workspace:*",
     "@stablecoin.xyz/react": "workspace:*",
     "@turnkey/sdk-react": "^5.4.10",
     "@turnkey/sdk-server": "^4.12.0",

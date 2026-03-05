@@ -155,6 +155,30 @@ export class WalletManager {
 
       const address = accounts[0];
 
+      // Switch wallet to the correct chain
+      const targetChainId = `0x${this.config.chain.id.toString(16)}`;
+      try {
+        await window.ethereum!.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: targetChainId }],
+        });
+      } catch (switchError: any) {
+        // 4902 = chain not added yet, try to add it
+        if (switchError?.code === 4902) {
+          const chain = this.config.chain;
+          await window.ethereum!.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: targetChainId,
+              chainName: chain.name,
+              nativeCurrency: chain.nativeCurrency,
+              rpcUrls: [chain.rpcUrls.default.http[0]],
+              blockExplorers: chain.blockExplorers?.default?.url ? [chain.blockExplorers.default.url] : undefined,
+            }],
+          });
+        }
+      }
+
       // Create a standard viem wallet client with proper account
       const walletClient = createWalletClient({
         account: toAccount({
@@ -218,7 +242,30 @@ export class WalletManager {
       }
 
       const address = accounts[0];
-      
+
+      // Switch wallet to the correct chain
+      const targetChainId = `0x${this.config.chain.id.toString(16)}`;
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: targetChainId }],
+        });
+      } catch (switchError: any) {
+        if ((switchError as any)?.code === 4902) {
+          const chain = this.config.chain;
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: targetChainId,
+              chainName: chain.name,
+              nativeCurrency: chain.nativeCurrency,
+              rpcUrls: [chain.rpcUrls.default.http[0]],
+              blockExplorers: chain.blockExplorers?.default?.url ? [chain.blockExplorers.default.url] : undefined,
+            }],
+          });
+        }
+      }
+
       // Create a standard viem wallet client for Coinbase Wallet with proper account
       const walletClient = createWalletClient({
         account: toAccount({

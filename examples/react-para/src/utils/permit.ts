@@ -5,11 +5,10 @@ export type PermitTypedData = {
   domain: {
     name: string;
     version: string;
-    chainId: bigint;
+    chainId: number;
     verifyingContract: `0x${string}`;
   };
   types: {
-    EIP712Domain: Array<{ name: string; type: string }>;
     Permit: Array<{ name: string; type: string }>;
   };
   message: {
@@ -37,16 +36,10 @@ export function buildPermitTypedData(params: {
     domain: {
       name: tokenName,
       version: '1',
-      chainId: BigInt(chainId),
+      chainId: chainId,
       verifyingContract: tokenAddress,
     },
     types: {
-      EIP712Domain: [
-        { name: 'name', type: 'string' },
-        { name: 'version', type: 'string' },
-        { name: 'chainId', type: 'uint256' },
-        { name: 'verifyingContract', type: 'address' },
-      ],
       Permit: [
         { name: 'owner', type: 'address' },
         { name: 'spender', type: 'address' },

@@ -1601,6 +1601,7 @@ export default function App() {
               SBC + Turnkey Integration
             </h1>
             <p className="text-gray-600">Embedded wallet smart accounts with Turnkey passkey authentication</p>
+            <p className="text-sm text-gray-500 mt-1">Chain: {chain.name} ({chain.id})</p>
           </div>
           <TurnkeyIntegration />
           <div className="mt-8 text-center text-xs text-gray-500">
@@ -1656,17 +1657,11 @@ async function getPermitSignature({
     const domain = {
       name: tokenName as string,
       version: '1',
-      chainId: BigInt(chainId),
+      chainId: chainId,
       verifyingContract: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
     };
 
     const types = {
-      EIP712Domain: [
-        { name: 'name', type: 'string' },
-        { name: 'version', type: 'string' },
-        { name: 'chainId', type: 'uint256' },
-        { name: 'verifyingContract', type: 'address' },
-      ],
       Permit: [
         { name: 'owner', type: 'address' },
         { name: 'spender', type: 'address' },

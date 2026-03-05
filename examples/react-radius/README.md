@@ -36,7 +36,7 @@ Get your API key from [SBC Dashboard](https://stablecoin.xyz)
 
 - **Chain ID**: 72344
 - **RPC**: https://rpc.testnet.radiustech.xyz
-- **Explorer**: https://testnet.radiustech.xyz/testnet/explorer
+- **Explorer**: https://testnet.radiustech.xyz
 - **EntryPoint**: 0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F
 - **Factory**: 0x7d8fB3E53d345601a02C3214e314f28668510b03
 
@@ -102,7 +102,7 @@ Add the network manually:
 - RPC URL: https://rpc.testnet.radiustech.xyz
 - Chain ID: 72344
 - Currency Symbol: USD
-- Block Explorer: https://testnet.radiustech.xyz/testnet/explorer
+- Block Explorer: https://testnet.radiustech.xyz
 
 ### Transaction fails
 
