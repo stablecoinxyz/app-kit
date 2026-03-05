@@ -1,6 +1,6 @@
 import { getChainConfig, buildAaProxyUrl, validateApiKey, formatError, decodeRevertReason, parseUserOperationError } from '../utils';
 import { base, baseSepolia } from 'viem/chains';
-import { radiusTestnet } from '../lib/radius-network';
+import { radiusTestnet, radius } from '../lib/radius-network';
 import { Chain } from 'viem';
 
 // Create a proper unsupported chain type for testing
@@ -36,6 +36,15 @@ describe('Utils Functions', () => {
       expect(radiusConfig.blockExplorerUrl).toBe('https://testnet.radiustech.xyz/testnet');
     });
 
+    it('should return config for radius mainnet chain', () => {
+      const radiusConfig = getChainConfig(radius);
+      expect(radiusConfig.id).toBe(723);
+      expect(radiusConfig.name).toBe('Radius');
+      expect(radiusConfig.idString).toBe('radius');
+      expect(radiusConfig.rpcUrl).toBe('https://rpc.radiustech.xyz');
+      expect(radiusConfig.blockExplorerUrl).toBe('https://network.radiustech.xyz');
+    });
+
     it('should throw error for unsupported chain', () => {
       const unsupportedChain = createUnsupportedChain(999, 'Unsupported');
       expect(() => getChainConfig(unsupportedChain)).toThrow();
@@ -61,6 +70,11 @@ describe('Utils Functions', () => {
     it('should build URL for radius testnet with staging flag', () => {
       const url = buildAaProxyUrl({ chain: radiusTestnet, apiKey: 'sbc-test123', staging: true });
       expect(url).toBe('https://api.aa.stablecoin.xyz/rpc/v1/radiusTestnet/sbc-test123?staging=true');
+    });
+
+    it('should build URL for radius mainnet', () => {
+      const url = buildAaProxyUrl({ chain: radius, apiKey: 'sbc-test123' });
+      expect(url).toBe('https://api.aa.stablecoin.xyz/rpc/v1/radius/sbc-test123');
     });
 
     it('should throw error for unsupported chain', () => {

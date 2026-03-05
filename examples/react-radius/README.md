@@ -6,10 +6,10 @@ React app demonstrating SBC Account Abstraction on Radius Testnet with SimpleAcc
 
 - ✅ **Radius Testnet** - Custom chain with dedicated EntryPoint and Factory
 - 🔐 **SimpleAccount** - Uses SimpleAccount (not Kernel) for Radius compatibility
-- 💸 **TestSBC Token** - ERC-20 token with EIP-2612 permit support (6 decimals)
+- 💸 **SBC Token** - ERC-20 token with EIP-2612 permit support (6 decimals)
 - 🌐 **MetaMask Integration** - Connect your wallet to control the smart account
 - ⛽ **Gasless Transactions** - All gas fees covered by SBC paymaster
-- 📊 **Balance Tracking** - View EOA and SimpleAccount balances for ETH and TestSBC
+- 📊 **Balance Tracking** - View EOA and SimpleAccount balances for ETH and SBC
 
 ## Quick Start
 
@@ -40,18 +40,11 @@ Get your API key from [SBC Dashboard](https://stablecoin.xyz)
 - **EntryPoint**: 0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F
 - **Factory**: 0x7d8fB3E53d345601a02C3214e314f28668510b03
 
-## TestSBC Token
+## SBC Token
 
-- **Address**: `0x4ace1a89b13bbe0101f73eb47bb83ac711cb2fad`
+- **Address**: `0x33ad9e4BD16B69B5BFdED37D8B5D9fF9aba014Fb`
 - **Decimals**: 6
-- **Features**: ERC-20 with EIP-2612 permit support
-
-### How to Get TestSBC
-
-1. Connect your MetaMask to Radius Testnet
-2. Import the TestSBC token using the address above
-3. Request testnet tokens from the Radius faucet (if available)
-4. Or contact the Radius team for test tokens
+- **Features**: ERC-20 with EIP-2612 permit support (same address on testnet and mainnet)
 
 ## How It Works
 
@@ -63,11 +56,11 @@ A deterministic SimpleAccount address is generated based on your EOA. The accoun
 
 ### 3. Token Transfer Flow
 
-When you send TestSBC tokens:
+When you send SBC tokens:
 
 1. **Permit Signature**: Your wallet signs an EIP-2612 permit message (no gas)
 2. **Batch UserOperation**: The SimpleAccount executes two calls:
-   - `permit()` - Approves the SimpleAccount to spend your EOA's TestSBC
+   - `permit()` - Approves the SimpleAccount to spend your EOA's SBC
    - `transferFrom()` - Transfers tokens from your EOA to the recipient
 3. **Gasless**: SBC paymaster covers all gas fees
 
@@ -113,7 +106,7 @@ Add the network manually:
 
 ### Transaction fails
 
-1. Ensure you have TestSBC tokens in your EOA (not SimpleAccount)
+1. Ensure you have SBC tokens in your EOA (not SimpleAccount)
 2. Check that MetaMask is connected to Radius Testnet
 3. Verify your SBC API key is valid
 4. Check browser console for detailed errors

@@ -28,8 +28,8 @@ import { getAction } from "viem/utils";
 import { getAccountNonce, getSenderAddress } from "permissionless/actions";
 import { toOwner } from "permissionless/utils";
 
-// Radius Testnet specific addresses
-import { RADIUS_TESTNET_ENTRY_POINT, RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY } from "./radius-network";
+// Radius addresses (same on both testnet and mainnet)
+import { RADIUS_ENTRY_POINT, RADIUS_SIMPLE_ACCOUNT_FACTORY } from "./radius-network";
 
 const getAccountInitCode = async (
   owner: Address,
@@ -95,9 +95,9 @@ export type RadiusSimpleSmartAccountImplementation = SmartAccountImplementation<
 export type ToRadiusSimpleSmartAccountReturnType = SmartAccount<RadiusSimpleSmartAccountImplementation>;
 
 /**
- * @description Creates a Simple Account for Radius Testnet with custom EntryPoint and Factory addresses
+ * @description Creates a Simple Account for Radius networks (testnet and mainnet) with custom EntryPoint and Factory addresses
  *
- * @returns A Simple Smart Account configured for Radius Testnet
+ * @returns A Simple Smart Account configured for Radius
  */
 export async function toRadiusSimpleSmartAccount(
   parameters: ToRadiusSimpleSmartAccountParameters
@@ -113,12 +113,12 @@ export async function toRadiusSimpleSmartAccount(
   const localOwner = await toOwner({ owner });
 
   const entryPoint = {
-    address: RADIUS_TESTNET_ENTRY_POINT,
+    address: RADIUS_ENTRY_POINT,
     abi: entryPoint07Abi,
     version: "0.7",
   } as const;
 
-  const factoryAddress = RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY;
+  const factoryAddress = RADIUS_SIMPLE_ACCOUNT_FACTORY;
 
   let accountAddress: Address | undefined = address;
 

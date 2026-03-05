@@ -287,7 +287,7 @@ export class WalletManager {
     try {
       // Get the wallet client from Dynamic
       const dynamicWalletClient = await primaryWallet.connector.getWalletClient();
-      
+
       // Debug: Log connector information to understand embedded wallet detection
       console.log('Dynamic connector info:', {
         name: primaryWallet.connector.name,

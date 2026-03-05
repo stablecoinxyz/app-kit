@@ -267,7 +267,7 @@ export class SbcAppKit {
 
   /**
    * Initialize the Smart Account client using SBC's infrastructure.
-   * Uses Kernel Smart Account for Base/Base Sepolia and SimpleAccount for Radius Testnet.
+   * Uses Kernel Smart Account for Base/Base Sepolia and SimpleAccount for Radius (testnet and mainnet).
    */
   private async initializeSmartAccountClient(): Promise<SmartAccountClient> {
     if (this.smartAccountClient) {
@@ -283,21 +283,21 @@ export class SbcAppKit {
     try {
       this.logInfo('initializing_smart_account_client');
 
-      // Check if using Radius Testnet (requires custom EntryPoint and Factory)
-      const isRadiusTestnet = this.config.chain.id === 72344;
+      // Check if using Radius (testnet or mainnet - requires custom EntryPoint and Factory)
+      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723;
 
       this.logInfo('chain_detection', {
         chainId: this.config.chain.id,
         chainName: this.config.chain.name,
-        isRadiusTestnet
+        isRadius
       });
 
       let smartAccount;
 
-      if (isRadiusTestnet) {
+      if (isRadius) {
         // Use Radius-specific SimpleAccount implementation
         this.logInfo('radius_account_creation_starting', {
-          message: 'Using Radius Testnet custom EntryPoint and Factory',
+          message: 'Using Radius custom EntryPoint and Factory',
           owner: this.walletClient.account.address
         });
 
@@ -312,7 +312,7 @@ export class SbcAppKit {
           entryPointVersion: smartAccount.entryPoint.version
         });
       } else {
-        // Use standard Kernel account for other chains (Base, Base Sepolia)
+        // Use standard Kernel account for non-Radius chains (Base, Base Sepolia)
         this.logInfo('creating_kernel_account', {
           message: 'Using standard Kernel Smart Account',
           owner: this.walletClient.account.address
@@ -337,7 +337,7 @@ export class SbcAppKit {
       // Create paymaster and smart account clients (same for both)
       this.logInfo('creating_paymaster_client', {
         aaProxyUrl: this.aaProxyUrl,
-        accountType: isRadiusTestnet ? 'radius-simple' : 'kernel'
+        accountType: isRadius ? 'radius-simple' : 'kernel'
       });
 
       const paymaster = createPaymasterClient({
@@ -345,7 +345,7 @@ export class SbcAppKit {
       });
 
       this.logInfo('creating_smart_account_client', {
-        accountType: isRadiusTestnet ? 'radius-simple' : 'kernel'
+        accountType: isRadius ? 'radius-simple' : 'kernel'
       });
 
       this.smartAccountClient = createSmartAccountClient({
@@ -357,7 +357,7 @@ export class SbcAppKit {
           estimateFeesPerGas: async () => {
             let gasPrice = await this.publicClient.getGasPrice();
             // Radius testnet: add 1 gwei to ensure non-zero gas price
-            if (isRadiusTestnet) {
+            if (isRadius) {
               gasPrice = gasPrice + 1000000000n; // +1 gwei
             }
             return {
@@ -370,7 +370,7 @@ export class SbcAppKit {
 
       this.logInfo('smart_account_client_initialized', {
         accountAddress: smartAccount.address,
-        accountType: isRadiusTestnet ? 'radius-simple' : 'kernel',
+        accountType: isRadius ? 'radius-simple' : 'kernel',
         chainId: this.config.chain.id,
         chainName: this.config.chain.name
       });
@@ -465,17 +465,17 @@ export class SbcAppKit {
       const calls = this.normalizeToCalls(params);
       this.logInfo('normalized_calls', { callsCount: calls.length });
 
-      // Radius Testnet requires explicit gas limits to avoid estimation issues
-      const isRadiusTestnet = this.config.chain.id === 72344;
-      const gasLimits = isRadiusTestnet ? {
+      // Radius requires explicit gas limits to avoid estimation issues
+      const isRadius = this.config.chain.id === 72344;
+      const gasLimits = isRadius ? {
         callGasLimit: 300000n,
         verificationGasLimit: 300000n,
         preVerificationGas: 100000n,
       } : {};
 
-      if (isRadiusTestnet) {
+      if (isRadius) {
         this.logInfo('radius_explicit_gas_limits', {
-          message: 'Using explicit gas limits for Radius Testnet',
+          message: 'Using explicit gas limits for Radius',
           callGasLimit: gasLimits.callGasLimit?.toString(),
           verificationGasLimit: gasLimits.verificationGasLimit?.toString(),
           preVerificationGas: gasLimits.preVerificationGas?.toString()
@@ -493,8 +493,8 @@ export class SbcAppKit {
       this.logInfo('waiting_for_receipt');
 
       let receipt;
-      if (isRadiusTestnet) {
-        // Radius Testnet: Use chain-direct polling as primary method
+      if (isRadius) {
+        // Radius: Use chain-direct polling as primary method
         // The bundler's eth_getUserOperationReceipt may not return receipts reliably
         // due to getLogs configuration issues. Instead, we poll the chain directly
         // for the UserOperationEvent log matching our userOpHash.
@@ -527,7 +527,7 @@ export class SbcAppKit {
    * Wait for a UserOperation to be included on-chain by polling for the UserOperationEvent log.
    *
    * This is used as a fallback when the bundler's eth_getUserOperationReceipt doesn't return
-   * receipts reliably (e.g., on Radius Testnet where the bundler's getLogs may not find events).
+   * receipts reliably (e.g., on Radius where the bundler's getLogs may not find events).
    *
    * @param userOpHash - The hash of the UserOperation to wait for
    * @param smartAccountClient - The smart account client (used to get EntryPoint address)
@@ -736,23 +736,23 @@ export class SbcAppKit {
       const calls = this.normalizeToCalls(params);
       this.logInfo('prepared_calls_for_estimation', { callsCount: calls.length });
 
-      // Radius Testnet requires explicit gas limits
-      const isRadiusTestnet = this.config.chain.id === 72344;
-      const gasLimits = isRadiusTestnet ? {
+      // Radius requires explicit gas limits
+      const isRadius = this.config.chain.id === 72344;
+      const gasLimits = isRadius ? {
         callGasLimit: 300000n,
         verificationGasLimit: 300000n,
         preVerificationGas: 100000n,
       } : {};
 
-      if (isRadiusTestnet) {
+      if (isRadius) {
         this.logInfo('radius_estimation_with_explicit_limits', {
-          message: 'Using explicit gas limits for Radius Testnet estimation',
+          message: 'Using explicit gas limits for Radius estimation',
           callGasLimit: gasLimits.callGasLimit?.toString(),
           verificationGasLimit: gasLimits.verificationGasLimit?.toString(),
           preVerificationGas: gasLimits.preVerificationGas?.toString()
         });
 
-        // For Radius Testnet, return the explicit gas limits directly
+        // For Radius, return the explicit gas limits directly
         // since estimation doesn't work reliably
         const gasPrice = await this.publicClient.getGasPrice();
         const accountBalance = await this.publicClient.getBalance({

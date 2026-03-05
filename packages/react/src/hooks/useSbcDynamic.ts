@@ -61,10 +61,26 @@ export function useSbcDynamic(config: UseSbcDynamicConfig): UseSbcDynamicReturn 
 
       try {
         setError(null);
-        
+
+        // Switch Dynamic wallet to the correct chain before initializing
+        try {
+          const currentNetwork = await config.primaryWallet.getNetwork?.();
+          const targetChainId = config.chain.id;
+          if (currentNetwork && Number(currentNetwork) !== targetChainId) {
+            if (config.debug) {
+              console.log(`[useSbcDynamic] Switching Dynamic wallet from chain ${currentNetwork} to ${targetChainId}`);
+            }
+            await config.primaryWallet.switchNetwork?.(targetChainId);
+          }
+        } catch (switchErr) {
+          if (config.debug) {
+            console.warn('[useSbcDynamic] Chain switch attempt:', switchErr);
+          }
+        }
+
         // Get Dynamic wallet client - it doesn't need an account property
         let dynamicWalletClient = null;
-        
+
         try {
           dynamicWalletClient = await config.primaryWallet.connector.getWalletClient();
           if (config.debug) {
@@ -76,7 +92,7 @@ export function useSbcDynamic(config: UseSbcDynamicConfig): UseSbcDynamicReturn 
         } catch (e) {
           throw new Error(`Failed to get Dynamic wallet client: ${e instanceof Error ? e.message : 'Unknown error'}`);
         }
-        
+
         if (!dynamicWalletClient) {
           throw new Error('Dynamic wallet client not available');
         }

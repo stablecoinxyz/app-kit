@@ -572,17 +572,11 @@ async function getPermitSignature({
     const domain = {
       name: tokenName as string,
       version: '1',
-      chainId: BigInt(chainId),
+      chainId: chainId,
       verifyingContract: SBC_TOKEN_ADDRESS(chain) as `0x${string}`,
     };
-    
+
     const types = {
-      EIP712Domain: [
-        { name: 'name', type: 'string' },
-        { name: 'version', type: 'string' },
-        { name: 'chainId', type: 'uint256' },
-        { name: 'verifyingContract', type: 'address' },
-      ],
       Permit: [
         { name: 'owner', type: 'address' },
         { name: 'spender', type: 'address' },

@@ -36,7 +36,11 @@ export * from './logging-adapters';
 // Radius Network support
 export {
   radiusTestnet,
+  radius,
   TestSBC_CONTRACT_ADDRESS,
+  SBC_CONTRACT_ADDRESS_RADIUS,
+  RADIUS_ENTRY_POINT,
+  RADIUS_SIMPLE_ACCOUNT_FACTORY,
   RADIUS_TESTNET_ENTRY_POINT,
   RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY
 } from './lib/radius-network';

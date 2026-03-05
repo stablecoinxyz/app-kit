@@ -4,8 +4,8 @@ export const radiusTestnet = defineChain({
   id: 72344,
   name: 'Radius Testnet',
   nativeCurrency: {
-    name: 'USD',
-    symbol: 'USD',
+    name: 'RUSD',
+    symbol: 'RUSD',
     decimals: 18
   },
   rpcUrls: {
@@ -22,9 +22,37 @@ export const radiusTestnet = defineChain({
   testnet: true,
 }) as unknown as Chain;
 
-// TestSBC with EIP-2612 support
-export const TestSBC_CONTRACT_ADDRESS = "0x17b7d356c95ef6d09472e43ba678b4a774f72f8f";
+export const radius = defineChain({
+  id: 723,
+  name: 'Radius',
+  nativeCurrency: {
+    name: 'RUSD',
+    symbol: 'RUSD',
+    decimals: 18
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.radiustech.xyz']
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Radius Explorer',
+      url: 'https://network.radiustech.xyz'
+    },
+  },
+}) as unknown as Chain;
 
-// Account Abstraction Addresses
-export const RADIUS_TESTNET_ENTRY_POINT = "0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F";
-export const RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY = "0x7d8fB3E53d345601a02C3214e314f28668510b03";
+// SBC Token on Radius (same address on both testnet and mainnet)
+export const SBC_CONTRACT_ADDRESS_RADIUS = "0x33ad9e4BD16B69B5BFdED37D8B5D9fF9aba014Fb";
+
+// Legacy alias — TestSBC is now the real SBC token
+export const TestSBC_CONTRACT_ADDRESS = SBC_CONTRACT_ADDRESS_RADIUS;
+
+// Account Abstraction Addresses (deterministically deployed, same on both networks)
+export const RADIUS_ENTRY_POINT = "0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F";
+export const RADIUS_SIMPLE_ACCOUNT_FACTORY = "0x7d8fB3E53d345601a02C3214e314f28668510b03";
+
+// Legacy aliases for backwards compatibility
+export const RADIUS_TESTNET_ENTRY_POINT = RADIUS_ENTRY_POINT;
+export const RADIUS_TESTNET_SIMPLE_ACCOUNT_FACTORY = RADIUS_SIMPLE_ACCOUNT_FACTORY;
