@@ -362,7 +362,7 @@ export class SbcAppKit {
             }
             return {
               maxFeePerGas: gasPrice,
-              maxPriorityFeePerGas: gasPrice * 2n,
+              maxPriorityFeePerGas: isRadius ? gasPrice : gasPrice * 2n,
             };
           },
         },
@@ -466,7 +466,7 @@ export class SbcAppKit {
       this.logInfo('normalized_calls', { callsCount: calls.length });
 
       // Radius requires explicit gas limits to avoid estimation issues
-      const isRadius = this.config.chain.id === 72344;
+      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723;
       const gasLimits = isRadius ? {
         callGasLimit: 300000n,
         verificationGasLimit: 300000n,
@@ -537,67 +537,38 @@ export class SbcAppKit {
     userOpHash: `0x${string}`,
     smartAccountClient: SmartAccountClient
   ): Promise<{ receipt: { transactionHash: `0x${string}`; blockNumber: bigint; gasUsed: bigint } }> {
-    const entryPointAddress = smartAccountClient.account?.entryPoint?.address;
-    if (!entryPointAddress) {
-      throw new Error('EntryPoint address not available');
-    }
-
     const maxAttempts = 60; // 60 attempts
     const pollInterval = 2000; // 2 seconds between polls
     const maxWaitTime = maxAttempts * pollInterval; // 120 seconds total
 
-    // Get current block number to avoid scanning entire chain history
-    const startBlock = await this.publicClient.getBlockNumber();
-
     this.logInfo('chain_direct_polling_started', {
       userOpHash,
-      entryPointAddress,
-      startBlock: startBlock.toString(),
+      entryPointAddress: smartAccountClient.account?.entryPoint?.address,
       maxWaitTime: `${maxWaitTime / 1000}s`
     });
 
+    // Poll pimlico_getUserOperationStatus via the bundler for the tx hash.
+    // Radius blocks increment ~1600/sec, making getLogs with fromBlock..latest
+    // exceed the RPC's block range limit almost immediately. The bundler's
+    // status endpoint reliably returns the tx hash once the op is included.
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        // Query for UserOperationEvent logs with matching userOpHash
-        // The userOpHash is the first indexed parameter (topics[1]) in the event
-        // Use startBlock - 5 as buffer to catch ops submitted just before we started
-        const fromBlock = startBlock > 5n ? startBlock - 5n : 0n;
-        const logs = await this.publicClient.getLogs({
-          address: entryPointAddress as `0x${string}`,
-          event: {
-            type: 'event',
-            name: 'UserOperationEvent',
-            inputs: [
-              { type: 'bytes32', name: 'userOpHash', indexed: true },
-              { type: 'address', name: 'sender', indexed: true },
-              { type: 'address', name: 'paymaster', indexed: true },
-              { type: 'uint256', name: 'nonce', indexed: false },
-              { type: 'bool', name: 'success', indexed: false },
-              { type: 'uint256', name: 'actualGasCost', indexed: false },
-              { type: 'uint256', name: 'actualGasUsed', indexed: false },
-            ],
-          },
-          args: {
-            userOpHash: userOpHash,
-          },
-          fromBlock,
-          toBlock: 'latest',
+        const response = await fetch(this.aaProxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'pimlico_getUserOperationStatus',
+            params: [userOpHash],
+          }),
         });
+        const json = await response.json() as { result?: { status: string; transactionHash?: string } };
+        const status = json.result?.status;
+        const txHash = json.result?.transactionHash as `0x${string}` | undefined;
 
-        if (logs.length > 0) {
-          const log = logs[0];
-          const txHash = log.transactionHash;
-
-          if (!txHash) {
-            // Transaction still pending
-            await new Promise(resolve => setTimeout(resolve, pollInterval));
-            continue;
-          }
-
-          // Get the full transaction receipt for additional details
-          const txReceipt = await this.publicClient.getTransactionReceipt({
-            hash: txHash,
-          });
+        if (status === 'included' && txHash) {
+          const txReceipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
 
           this.logInfo('chain_direct_polling_success', {
             userOpHash,
@@ -614,15 +585,20 @@ export class SbcAppKit {
             }
           };
         }
+
+        if (status === 'rejected' || status === 'failed') {
+          throw new Error(`UserOperation ${status}. Hash: ${userOpHash}`);
+        }
       } catch (error) {
-        // Log but don't fail - continue polling
+        if (error instanceof Error && (error.message.includes('rejected') || error.message.includes('failed'))) {
+          throw error;
+        }
         this.logInfo('chain_direct_polling_attempt_error', {
           attempt: attempt + 1,
           error: formatError(error)
         });
       }
 
-      // Wait before next poll
       await new Promise(resolve => setTimeout(resolve, pollInterval));
     }
 
@@ -743,7 +719,7 @@ export class SbcAppKit {
       this.logInfo('prepared_calls_for_estimation', { callsCount: calls.length });
 
       // Radius requires explicit gas limits
-      const isRadius = this.config.chain.id === 72344;
+      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723;
       const gasLimits = isRadius ? {
         callGasLimit: 300000n,
         verificationGasLimit: 300000n,
