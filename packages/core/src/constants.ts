@@ -28,7 +28,7 @@ export const CHAIN_CONFIGS = new Map<number, ChainConfig>([
     blockExplorerUrl: 'https://testnet.radiustech.xyz'
   }],
   [radius.id, {
-    id: 723,
+    id: 723487,
     name: 'Radius',
     idString: 'radius',
     rpcUrl: 'https://rpc.radiustech.xyz',

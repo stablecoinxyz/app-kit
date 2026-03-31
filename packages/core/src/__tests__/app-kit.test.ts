@@ -855,7 +855,7 @@ describe('SbcAppKit', () => {
 
       const kit = new SbcAppKit(config);
       expect(kit.getChain()).toBe(radius);
-      expect(kit.getChainConfig().id).toBe(723);
+      expect(kit.getChainConfig().id).toBe(723487);
     });
 
     it('should use Radius SimpleAccount for Radius Mainnet', async () => {

@@ -1,6 +1,6 @@
 # React Radius Mainnet Example
 
-React app demonstrating SBC Account Abstraction on Radius Mainnet (Chain ID 723) with SimpleAccount implementation.
+React app demonstrating SBC Account Abstraction on Radius Mainnet (Chain ID 723487) with SimpleAccount implementation.
 
 ## Features
 
@@ -33,7 +33,7 @@ Get your API key from [SBC Dashboard](https://stablecoin.xyz)
 
 ## Radius Mainnet Details
 
-- **Chain ID**: 723
+- **Chain ID**: 723487
 - **RPC**: https://rpc.radiustech.xyz
 - **Explorer**: https://network.radiustech.xyz
 - **EntryPoint**: 0xfA15FF1e8e3a66737fb161e4f9Fa8935daD7B04F
@@ -84,7 +84,7 @@ pnpm run build
 Add the network manually:
 - Network Name: Radius
 - RPC URL: https://rpc.radiustech.xyz
-- Chain ID: 723
+- Chain ID: 723487
 - Currency Symbol: RUSD
 - Block Explorer: https://network.radiustech.xyz
 

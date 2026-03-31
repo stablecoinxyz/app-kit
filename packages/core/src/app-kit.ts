@@ -284,7 +284,7 @@ export class SbcAppKit {
       this.logInfo('initializing_smart_account_client');
 
       // Check if using Radius (testnet or mainnet - requires custom EntryPoint and Factory)
-      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723;
+      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723487;
 
       this.logInfo('chain_detection', {
         chainId: this.config.chain.id,
@@ -466,7 +466,7 @@ export class SbcAppKit {
       this.logInfo('normalized_calls', { callsCount: calls.length });
 
       // Radius requires explicit gas limits to avoid estimation issues
-      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723;
+      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723487;
       const gasLimits = isRadius ? {
         callGasLimit: 300000n,
         verificationGasLimit: 300000n,
@@ -719,7 +719,7 @@ export class SbcAppKit {
       this.logInfo('prepared_calls_for_estimation', { callsCount: calls.length });
 
       // Radius requires explicit gas limits
-      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723;
+      const isRadius = this.config.chain.id === 72344 || this.config.chain.id === 723487;
       const gasLimits = isRadius ? {
         callGasLimit: 300000n,
         verificationGasLimit: 300000n,

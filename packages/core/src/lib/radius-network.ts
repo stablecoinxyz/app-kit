@@ -23,7 +23,7 @@ export const radiusTestnet = defineChain({
 }) as unknown as Chain;
 
 export const radius = defineChain({
-  id: 723,
+  id: 723487,
   name: 'Radius',
   nativeCurrency: {
     name: 'RUSD',

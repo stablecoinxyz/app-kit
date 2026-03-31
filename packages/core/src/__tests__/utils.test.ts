@@ -38,7 +38,7 @@ describe('Utils Functions', () => {
 
     it('should return config for radius mainnet chain', () => {
       const radiusConfig = getChainConfig(radius);
-      expect(radiusConfig.id).toBe(723);
+      expect(radiusConfig.id).toBe(723487);
       expect(radiusConfig.name).toBe('Radius');
       expect(radiusConfig.idString).toBe('radius');
       expect(radiusConfig.rpcUrl).toBe('https://rpc.radiustech.xyz');

@@ -5,42 +5,48 @@ import { usePara } from './hooks/usePara';
 import { Providers } from './providers';
 import { ConnectButton } from './components/ConnectButton';
 import { baseSepolia, base } from 'viem/chains';
+import { radiusTestnet, radius, SBC_CONTRACT_ADDRESS_RADIUS } from '@stablecoin.xyz/core';
 import { createPublicClient, http, getAddress, PublicClient, Chain } from 'viem';
 import { hexToBytes } from 'viem/utils';
 import { parseUnits, encodeFunctionData, erc20Abi } from 'viem';
 import { buildPermitTypedData, hashPermitTypedData, hex32ToBase64, normalizeSignatureToRSV, deriveVForRS } from './utils/permit';
 import './index.css';
 
-// default to baseSepolia, but can be overridden with VITE_CHAIN=base
-const chain = (import.meta.env.VITE_CHAIN === 'base') ? base : baseSepolia;
+// default to baseSepolia, but can be overridden with VITE_CHAIN
+const getChain = () => {
+  const chainEnv = import.meta.env.VITE_CHAIN;
+  if (chainEnv === 'base') return base;
+  if (chainEnv === 'radiusTestnet') return radiusTestnet;
+  if (chainEnv === 'radius') return radius;
+  return baseSepolia;
+};
+const chain = getChain();
 const rpcUrl = import.meta.env.VITE_RPC_URL;
 
 const SBC_TOKEN_ADDRESS = (chain: Chain) => {
-  if (chain.id === baseSepolia.id) {
-    return '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
-  } else if (chain.id === base.id) {
-    return '0xfdcC3dd6671eaB0709A4C0f3F53De9a333d80798';
-  }
+  if (chain.id === baseSepolia.id) return '0xf9FB20B8E097904f0aB7d12e9DbeE88f2dcd0F16';
+  if (chain.id === base.id) return '0xfdcC3dd6671eaB0709A4C0f3F53De9a333d80798';
+  if (chain.id === radiusTestnet.id || chain.id === radius.id) return SBC_CONTRACT_ADDRESS_RADIUS;
   throw new Error('Unsupported chain');
 };
 
 const SBC_DECIMALS = (chain: Chain) => {
-  if (chain.id === baseSepolia.id) {
-    return 6;
-  } else if (chain.id === base.id) {
-    return 18;
-  }
+  if (chain.id === baseSepolia.id) return 6;
+  if (chain.id === base.id) return 18;
+  if (chain.id === radiusTestnet.id || chain.id === radius.id) return 6;
   throw new Error('Unsupported chain');
 };
 
 const chainExplorer = (chain: Chain) => {
-  if (chain.id === baseSepolia.id) {
-    return 'https://sepolia.basescan.org';
-  } else if (chain.id === base.id) {
-    return 'https://basescan.org';
-  }
-  throw new Error('Unsupported chain');
+  if (chain.id === baseSepolia.id) return 'https://sepolia.basescan.org';
+  if (chain.id === base.id) return 'https://basescan.org';
+  if (chain.id === radiusTestnet.id) return 'https://testnet.radiustech.xyz';
+  if (chain.id === radius.id) return 'https://network.radiustech.xyz';
+  return '';
 };
+
+const isRadiusChain = (c: Chain) => c.id === radiusTestnet.id || c.id === radius.id;
+const nativeCurrencyLabel = (c: Chain) => isRadiusChain(c) ? 'RUSD' : 'ETH';
 
 const publicClient = createPublicClient({ 
   chain, 
@@ -202,9 +208,9 @@ function SmartAccountInfo({
           <p className="text-xs font-medium text-purple-700 mb-2">Smart Account Balances:</p>
           <div className="space-y-1">
             <div className="flex justify-between">
-              <span className="text-purple-700">ETH:</span>
+              <span className="text-purple-700">{nativeCurrencyLabel(chain)}:</span>
               <span className="text-purple-600 font-mono text-xs">
-                {formatEthBalance(account.balance)} ETH
+                {formatEthBalance(account.balance)} {nativeCurrencyLabel(chain)}
               </span>
             </div>
             <div className="flex justify-between">
