@@ -1,5 +1,12 @@
 # sbc-para-example
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [d540163]
+  - @stablecoin.xyz/core@1.6.2
+
 ## 0.0.8
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @stablecoin.xyz/core
 
+## 1.6.2
+
+### Patch Changes
+
+- d540163: Update Radius mainnet chain ID from 723 to 723487
+
 ## 1.6.1
 
 ### Patch Changes
