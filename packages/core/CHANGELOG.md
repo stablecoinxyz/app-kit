@@ -1,5 +1,11 @@
 # @stablecoin.xyz/core
 
+## 1.6.3
+
+### Patch Changes
+
+- Fix Radius mainnet chain ID in the published artifact. The source was corrected to `723487` in 1.6.2, but the npm tarball was packed from a stale `dist/` and still shipped `723`, so UserOps were signed with the wrong `chainId` and the EntryPoint rejected them with an AA24 signature error. This release rebuilds and republishes with the correct `723487`. A `prepublishOnly` build guard was added to prevent shipping a stale `dist/` again.
+
 ## 1.6.2
 
 ### Patch Changes

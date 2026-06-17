@@ -1,6 +1,6 @@
 {
   "name": "@stablecoin.xyz/core",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Core TypeScript SDK for SBC Account Abstraction infrastructure",
   "type": "module",
   "main": "dist/index.js",
@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "rollup -c",
+    "prepublishOnly": "pnpm build",
     "dev": "rollup -c -w",
     "test": "jest",
     "test:watch": "jest --watch",
