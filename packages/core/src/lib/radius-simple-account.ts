@@ -110,7 +110,12 @@ export async function toRadiusSimpleSmartAccount(
     nonceKey,
   } = parameters;
 
-  const localOwner = await toOwner({ owner });
+  const localOwner = 'account' in owner && owner.account?.type === 'local'
+    ? owner.account
+    : await toOwner({
+        owner,
+        address: 'account' in owner ? owner.account?.address : undefined,
+      });
 
   const entryPoint = {
     address: RADIUS_ENTRY_POINT,
