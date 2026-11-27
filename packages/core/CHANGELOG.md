@@ -1,5 +1,11 @@
 # @stablecoin.xyz/core
 
+## 1.6.4
+
+### Patch Changes
+
+- 44a8a0b: Fix Radius SimpleAccount initialization with viem wallet clients by using the connected account address instead of requesting accounts from the chain RPC.
+
 ## 1.6.3
 
 ### Patch Changes
